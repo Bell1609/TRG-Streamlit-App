@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>This is the title of the webpage!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: black;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h3 {
+            color: #008896;
+            text-align: center;
+        }
+
+        p {
+            margin-bottom: 20px;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        ul ul {
+            margin-left: 20px;
+            list-style-type: square;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        strong {
+            color: #F05023;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h3>Relevant resources **<strong>MUST KNOW</strong>**</h3>
+        <ul>
+            <li>The customer segmentating for sales data uses RFM (Recency, Frequency, Monetary) analysis. Therefore,
+                anyone who wants to learn more
+                about RFM analysis can visit <a href="https://www.putler.com/rfm-analysis/?ref=200lab.io">this
+                    website</a></li>
+            <li>The clustering method used for this app is K-Means clustering method. For more information, visit <a
+                    href="https://neptune.ai/blog/k-means-clustering">this website</a></li>
+        </ul>
+        <h3>How to use this application</h3>
+        <p>This application is intended for segmenting customer data extracted from FreshSales and FreshDesk. However,
+            any sales and tickets data will work if there is enough information.</p>
+        <p>
+            The <strong>required</strong> fields include:
+        <ul>
+            <li>For sales RFM segmenting:
+                <ul>
+                    <li>AccountID: The ID of the account who did the purchase</li>
+                    <li>CloseDate: The date that the deal was closed on</li>
+                    <li>DealValue: The value of deals (in a consistent currency)</li>
+                    <li>DealStage: The status of the deal (<strong>Won</strong> for deals won, and <strong>Lost</strong>
+                        for deals lost, and others)</li>
+                </ul>
+            </li>
+            <li>For tickets segmenting:
+                <ul>
+                    <li>Group Company: The group that the client's company belongs to</li>
+                    <li>Brand: The brand of the client's company</li>
+                    <li>Client code: The client code provided by FreshDesk</li>
+                    <li>Customer: Whether or not a customer raised that ticket (<strong>Yes</strong> or
+                        <strong>No</strong>)
+                    </li>
+                    <li>Closed time: The time that the ticket was closed</li>
+                </ul>
+            </li>
+        </ul>
+        <strong>WARNING:</strong> all of the columns above need to be exactly named like that, or else the system won't
+        work.
+        </p>
+        <h3>What is this app doing?</h3>
+        <p>
+        <p>This app is for customer segmentation, a way to divide customers into groups to strategize approaches to
+            different customer clusters.</p>
+        <p>By using the data provided, this app uses relevant fields to divide the customer base.</p>
+        <strong>Note:</strong> when divided, the clusters will not the ranked, e.g. cluster 1 is not 'better' or
+        'worse' than cluster 2 customers.
+        You will also have the option to download the data with every companies clustered, which can be used for
+        your own analysis.
+        </p>
+    </div>
+</body>
+
+</html>
