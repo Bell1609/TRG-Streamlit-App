@@ -21,7 +21,7 @@ class Ticket_Data():
     def create_dataframe(self, raw_data):
         raw_data.loc[~raw_data['Group Company'].isnull(), 'Client code'] = raw_data['Group Company']
         raw_data.loc[~raw_data['Brand'].isnull(), 'Client code'] = raw_data['Brand']
-        fd_customer = raw_data[raw_data['Customer']==True]
+        fd_customer = raw_data[raw_data['TRG Customer']==True]
         
         return fd_customer
     
