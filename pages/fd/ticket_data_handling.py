@@ -8,10 +8,13 @@ from sklearn.preprocessing import LabelEncoder
 
 class Ticket_Data():
     def get_raw(self, file):
+        """
+        Gets the raw dataframe from the CSV or Excel file.
+        Returns a raw dataframe with nothing configured.
+        """
         try:
             raw_data = pd.read_csv(file)
         except Exception:
-        # try:
             raw_data = pd.read_excel(file)
         except:
             print("Use .csv or .xlsx files only!")
@@ -19,6 +22,9 @@ class Ticket_Data():
         return raw_data
     
     def create_dataframe(self, raw_data):
+        """
+        Creates a dataframe that incorporates group company and brand into client codes, and only takes in tickets from TRG customers.
+        """
         raw_data.loc[~raw_data['Group Company'].isnull(), 'Client code'] = raw_data['Group Company']
         raw_data.loc[~raw_data['Brand'].isnull(), 'Client code'] = raw_data['Brand']
         fd_customer = raw_data[raw_data['TRG Customer']==True]
@@ -27,22 +33,26 @@ class Ticket_Data():
     
     def create_df_with_relevant_info(self, fd_customer):
         def create_recency():
+            """Creates dataframe for recency values"""
             fd_customer['Closed time'] = pd.to_datetime(fd_customer['Closed time'])
             df_recency = fd_customer.groupby('Client code')['Closed time'].max().reset_index()
             df_recency['Recency'] = (df_recency['Closed time'].max() - df_recency['Closed time']).dt.days
             return df_recency
         
         def create_volume():
+            """Creates dataframe for ticket values from 1 client code."""
             df_volume = fd_customer.groupby('Client code')['Closed time'].count().reset_index()
             df_volume = df_volume.rename(columns=({'Closed time': 'Ticket Count'}))
             df_volume = df_volume.loc[df_volume['Client code']!='']
             return df_volume
         
         def create_interactions():
+            """Creates dataframe for the amount of interactions."""
             df_interactions = fd_customer.groupby('Client code')[['Customer interactions', 'Agent interactions']].sum().reset_index()
             return df_interactions
         
         def create_ams_cms():
+            """Creates dataframe for AMS/CMS availability."""
             df_ams_cms = fd_customer.groupby('Client code')[['AMS', 'CMS']].all().reset_index()
             return df_ams_cms
             
@@ -52,6 +62,8 @@ class Ticket_Data():
         df_ams_cms = create_ams_cms()
 
         df_list = [df_recency[['Client code', 'Recency']], df_volume, df_ams_cms, df_interactions]
+        
+        # Merge all of the relevant dataframes
         df_attributes = ft.reduce(lambda left, right: pd.merge(left, right, on='Client code'), df_list)
         return df_attributes
     
