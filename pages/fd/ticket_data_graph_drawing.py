@@ -9,6 +9,7 @@ from matplotlib.patches import Patch
 
 class Ticket_Graph_Drawing():
     def recency_graph(self, df_attributes):
+        """Draws the graph for recency values"""
         plt.figure()
         
         sns.histplot(df_attributes['Recency'], kde=True)
@@ -22,6 +23,7 @@ class Ticket_Graph_Drawing():
         return plt.gcf()
     
     def interactions_graph(self,df_attributes):
+        """Draws the graph for interactions values"""
         plt.figure()
         sns.histplot(df_attributes[df_attributes['Customer interactions']< 10000]['Customer interactions'], 
                     color='red', 
@@ -41,6 +43,7 @@ class Ticket_Graph_Drawing():
         return plt.gcf()
     
     def tickets_graph(self, df_attributes):
+        """Draws the graph for ticket volume"""
         plt.figure()
         sns.histplot(df_attributes[df_attributes['Ticket Count']<1000]['Ticket Count'], kde=True, color='orange', edgecolor='lightblue')
         
@@ -49,6 +52,7 @@ class Ticket_Graph_Drawing():
         return plt.gcf()
     
     def treemap_drawing(self, cluster_centers):
+        """Draws the treemap to depict the clustering results"""
         plt.figure()
         sns.set_style(style="whitegrid") # set seaborn plot style
         sizes= cluster_centers['Cluster Size']# proportions of the categories
@@ -81,6 +85,7 @@ class Ticket_Graph_Drawing():
         return plt.gcf()
     
     def scatter_3d_drawing(self, df_kmeans):
+        """Draws a 3D scatterplot to depict clusters according to recency, ticket volume, and interactions."""
         df_scatter = df_kmeans
         df_scatter['Combined Interactions'] = df_kmeans['Agent interactions'] + df_kmeans['Customer interactions']
         df_scatter['Cluster'] = df_scatter['Cluster'].astype(str)
