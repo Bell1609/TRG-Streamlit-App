@@ -1,7 +1,7 @@
 # TRG Customer Segmentation App
 
 ## Overview
-This application is intended for segmenting customer data extracted from FreshSales and FreshDesk. However, any sales and tickets data will work if there is enough fields required for analysis.
+This application is intended for segmenting TRG Customer data extracted from FreshSales and FreshDesk. However, any sales and tickets data will work if there is enough fields required for analysis.
 
 ## Required fields
 ### For FreshSales analysis
@@ -13,7 +13,7 @@ This application is intended for segmenting customer data extracted from FreshSa
 - Group Company: The group that the client's company belongs to
 - Brand: The brand of the client's company
 - Client code: The client code provided by FreshDesk
-- Customer: Whether or not a customer raised that ticket (Yes or No)
+- TRG Customer: Whether or not a TRG Customer raised that ticket (Yes or No)
 - Closed time: The time that the ticket was closed
 
 ## Installation
