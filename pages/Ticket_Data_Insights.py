@@ -2,10 +2,9 @@ from __future__ import division
 from io import BytesIO
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
 import sys
 import os
-import matplotlib.dates as mdates
+
 
 # Add the parent directory to the system path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -83,6 +82,8 @@ st.subheader('Data Load')
 # File uploaders
 ticket_file = st.file_uploader('Upload your ticket data file:', ['csv', 'xlsx'])
 #employee_file = st.file_uploader('Upload your employee data file:', ['csv', 'xlsx'])
+# Add a file uploader for the Companies data
+companies_file = st.file_uploader("Upload FD Companies.xlsx", type=['csv','xlsx'])
 
 # Input box for support utilization percentage
 support_percentage = st.text_input('Enter Support Utilization Percentage:', value='65')
@@ -100,20 +101,32 @@ if 'stage' not in st.session_state:
 def click_button(stage):
     st.session_state.stage = stage
 
-#if ticket_file and employee_file:
-if ticket_file:
+#if ticket_file and companies_file:
+if ticket_file and companies_file:
     ticket_raw_data = ticket_data.get_raw(ticket_file)
     #employees_transformed = ticket_data.load_and_transform_employees(employee_file)
+    # Call the function to load and process the data
+    companies_df = ticket_data.load_and_process_companies(companies_file)
+    # Display the first few rows of the processed data
+    st.markdown("**Processed Companies Data**")
+    st.dataframe(companies_df)
     
-    #if not ticket_raw_data.empty and not employees_transformed.empty:
-    if not ticket_raw_data.empty:
-        st.subheader('Data Preprocessing')
+    if not ticket_raw_data.empty and not companies_df.empty:
+    #if not ticket_raw_data.empty:
+        #st.subheader('Data Preprocessing')
         try:
-            st.markdown('**Processed Data Frame**')
+            #st.markdown('**Processed Data Frame**')
             processed_data = preprocess_data(ticket_raw_data)
-            st.dataframe(processed_data)
+            #st.dataframe(processed_data)
             # st.markdown('**Employees Data**')
             # st.dataframe(employees_transformed)
+            # Call the function to load and process the data
+            companies_df = ticket_data.load_and_process_companies(companies_file)
+            st.markdown('**Companies Data Transposed**')
+            st.dataframe(companies_df)
+
+            
+            
         except KeyError as ke:
             st.error("""You need columns with such names: Contact ID, Company Name, Ticket ID,
              Brand, Systems Environment, Valid Maintenance, AMS, CMS, FS TRG Customer, Country, Industry, License Qty, Created time, Type, Group, Agent, Time tracked, First response time (in hrs),
@@ -213,16 +226,37 @@ if ticket_file:
         if use_valid_maintenance:
             processed_data_filtered = processed_data_filtered[processed_data_filtered['Valid Maintenance'] == 'Yes']
         
-        #Get the average handling time per ticket
-        AHT = processed_data_filtered['Time tracked'].quantile(0.75)
+        #Get the average handling time per ticket and other information from tickets data
+        ticket_count = processed_data_filtered['Ticket ID'].count()
+        avg_time_tracked = processed_data_filtered['Time tracked'].mean()
+        avg_agent_interactions = processed_data_filtered['Agent interactions'].mean()
+        avg_customer_interactions = processed_data_filtered['Customer interactions'].mean()
+        
         
         st.subheader('Data Exploration')
         st.markdown('**HelpDesk Performance Data**')
 
         # Update helpdesk performance based on filtered data
-        helpdesk_performance = ticket_data.create_helpdesk_performance(processed_data_filtered, support_percentage, AHT)
+        helpdesk_performance = ticket_data.create_helpdesk_performance(processed_data_filtered, support_percentage, avg_time_tracked)
         st.dataframe(helpdesk_performance)
         ticket_n_contact_by_company = ticket_data.create_ticket_and_contact_grouped_by_company(processed_data_filtered)
+        
+        # Calculate the count of valid companies grouped by Month
+        valid_companies_by_month = companies_df.groupby('Month').agg(Valid_Company_Count=('Company Name', 'count')).reset_index()
+
+        # Right join valid companies data with the helpdesk performance data on 'Month'
+        combined_df = pd.merge(valid_companies_by_month, helpdesk_performance[['Month', 'Company_Count']], on='Month', how='right')
+
+        # Fill NaN values in 'Valid_Company_Count' with 0
+        combined_df['Valid_Company_Count'].fillna(0, inplace=True)
+        
+        # Calculate the average percentage of Company_Count / Valid_Company_Count
+        combined_df['Percentage'] = combined_df['Company_Count'] / combined_df['Valid_Company_Count']
+        avg_percentage = combined_df['Percentage'].mean() * 100
+
+        # Display the combined DataFrame
+        st.markdown("**Combined Data with Valid and Company Count**")
+        st.dataframe(combined_df)
         
 
         # Check if 'Part Time' is not in selected_groups
@@ -247,15 +281,56 @@ if ticket_file:
         st.dataframe(ticket_n_contact_by_company)
         
         # Data profiling before segmentation
+        # Display Data Profiling section
         st.subheader('Data Profiling')
+
+        # Profiling for Tickets
         st.write(f"**Data Profiling for Tickets**")
         st.write(processed_data_filtered.describe())
+
+        # Write additional important information for Tickets
         
+        st.write(f"- Total Ticket Count: {ticket_count}")
+        st.write(f"- Average Time Tracked per Ticket: {avg_time_tracked:.2f} hrs")
+        st.write(f"- Average Agent Interactions per Ticket: {avg_agent_interactions:.2f}")
+        st.write(f"- Average Customer Interactions per Ticket: {avg_customer_interactions:.2f}")
+
+        # Profiling for HelpDesk Performance
         st.write(f"**Data Profiling for HelpDesk Performance**")
         st.write(helpdesk_performance.describe())
+
+        # Write additional important information for HelpDesk Performance
+        avg_tickets_per_month = helpdesk_performance['Ticket_Count'].mean()
+        avg_agents_needed_per_month = helpdesk_performance['Agent_Needed'].mean()
+        avg_capacity_needed_per_month = helpdesk_performance['Capacity_Needed'].mean()
+        st.write(f"- Average Tickets per Month: {avg_tickets_per_month:.2f}")
+        st.write(f"- Average Agents Needed per Month: {avg_agents_needed_per_month:.2f}")
+        st.write(f"- Average Capacity Needed per Month: {avg_capacity_needed_per_month:.2f}")
         
+        # Profiling for Ticket Data Grouped by Company
         st.write(f"**Data Profiling for Ticket Data Grouped by Company**")
         st.write(ticket_n_contact_by_company.describe())
+        
+        # Write additional important information for Ticket Data Grouped by Company
+        unique_companies = ticket_n_contact_by_company['Company Name'].nunique()
+        avg_tickets_per_company = ticket_n_contact_by_company['Ticket_Count'].mean()
+        avg_contacts_per_company = ticket_n_contact_by_company['Contact_Count'].mean()
+        st.write(f"- Unique Companies: {unique_companies}")
+        st.write(f"- Average Tickets per Company per Month: {avg_tickets_per_company:.2f}")
+        st.write(f"- Average Contacts per Company per Month: {avg_contacts_per_company:.2f}")
+        
+        # Profiling for Company Data Grouped by Month
+        st.write(f"**Data Profiling for Company Data Grouped by Month**")
+        st.write(combined_df.describe())
+        
+        # Write additional important information for valid company Data Grouped by month
+        combined_df['Percentage'] = combined_df['Company_Count'] / combined_df['Valid_Company_Count']
+        avg_percentage = combined_df['Percentage'].mean() * 100
+        avg_valid_company = combined_df['Valid_Company_Count'].mean()
+        avg_company_count = combined_df['Company_Count'].mean()
+        st.write(f"- Average Valid Maintenance Companies per Month: {avg_valid_company:.2f}")
+        st.write(f"- Average Companies Having Tickets per Month: {avg_company_count:.2f}")
+        st.write(f"- Average Percentage of Companies Having Tickets / Valid Maintenance Companies: {avg_percentage:.2f}%")    
     
         # Display the dropdown for selecting a column to plot        
         st.subheader('Helpdesk Tickets Data Insights')
@@ -271,10 +346,19 @@ if ticket_file:
             # Set the x-axis ticks manually to display months every 3rd month
             months = helpdesk_performance['Month'].unique()
             ax1.set_xticks(range(0, len(months), 3))  # Set tick positions every 3 months
-            ax1.set_xticklabels(months[::3], rotation=45, ha='right')  # Set labels to display every 3rd month
+            ax1.set_xticklabels(months[::3], rotation=90, ha='right')  # Set labels to display every 3rd month
 
             # Display the plot
             st.pyplot(fig1)
+            
+        # Display a subheader for the section
+        st.subheader("Valid Maintenance Companies Count vs Companies Having Tickets Over Time")
+
+        # Call the function and get the figure
+        fig = ticket_graph_drawing.plot_valid_vs_total_company_count(combined_df)
+
+        # Display the figure in Streamlit
+        st.pyplot(fig)
 
 
         # Generate downloadable Excel files        

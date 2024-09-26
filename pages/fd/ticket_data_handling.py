@@ -212,11 +212,11 @@ class Ticket_Data():
 
        # Calculate the mean value of 'Average_Time_Tracked'
         #third_quartile_average_time_tracked = helpdesk_performance['Average_Time_Tracked'].quantile(0.75)
-        third_quartile_ticket_count = helpdesk_performance['Ticket_Count'].quantile(0.75)
+        avg_time_tracked_ticket_count = helpdesk_performance['Ticket_Count'].mean()
 
 
         # Calculate Agent_Needed based on the mean value
-        helpdesk_performance['Agent_Needed'] = (avg_time_tracked * third_quartile_ticket_count) / (helpdesk_performance['Working_Days'].mean() * 8)
+        helpdesk_performance['Agent_Needed'] = (avg_time_tracked * avg_time_tracked_ticket_count) / (helpdesk_performance['Working_Days'].mean() * 8)
 
         # Calculate Capacity_Needed based on support_percentage
         helpdesk_performance['Capacity_Needed'] = (helpdesk_performance['Agent_Needed'] * 100) / support_percentage
@@ -289,11 +289,26 @@ class Ticket_Data():
         employees_transformed = pd.DataFrame(rows)
         return employees_transformed
 
-    
+    def load_and_process_companies(self,file):
+        # Load the Excel file into a DataFrame
+        df_companies = pd.read_excel(file)
 
+        # Ensure the required columns exist
+        required_columns = ['Company Name', 'Initial ASM Date', 'Renewal date']
+        if not all(col in df_companies.columns for col in required_columns):
+            raise ValueError(f"File must contain these columns: {', '.join(required_columns)}")
 
+        # Convert 'Initial ASM Date' and 'Renewal Date' to datetime format
+        df_companies['Initial ASM Date'] = pd.to_datetime(df_companies['Initial ASM Date'], errors='coerce')
+        df_companies['Renewal date'] = pd.to_datetime(df_companies['Renewal date'], errors='coerce')
 
+        # Create a DataFrame with months ranging from the earliest 'Initial ASM Date' to the latest 'Renewal Date'
+        df_companies['Month'] = df_companies.apply(lambda row: pd.date_range(start=row['Initial ASM Date'], end=row['Renewal date'], freq='MS').strftime('%Y-%m'), axis=1)
+        
+        # Explode the 'Month' column to have a row for each month
+        df_companies = df_companies.explode('Month').reset_index(drop=True)
 
+        # Add the 'Valid Maintenance' column
+        df_companies['Valid Maintenance'] = 'Yes'
 
-
-
+        return df_companies[['Month', 'Company Name', 'Valid Maintenance']]

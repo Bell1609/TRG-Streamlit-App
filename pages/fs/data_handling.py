@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+from datetime import datetime
 
 
 class Data_Handling():
@@ -20,7 +21,7 @@ class Data_Handling():
         return raw_data
     
     
-    def create_rfm_dataframe(self, df, id_field):
+    """ def create_rfm_dataframe(self, df, id_field):
         # Initialize the RFM DataFrame using the unique account IDs
         df_rfm = pd.DataFrame(df[id_field].unique())
         df_rfm.columns = [id_field]
@@ -45,6 +46,47 @@ class Data_Handling():
         df_mone.columns = [id_field, 'Monetary']
         df_rfm = pd.merge(df_rfm, df_mone, on=id_field)
         
+        return df_rfm """
+
+
+    def create_rfm_dataframe(self, df, id_field):
+        # Initialize the RFM DataFrame using the unique account IDs
+        df_rfm = pd.DataFrame(df[id_field].unique())
+        df_rfm.columns = [id_field]
+
+        # Get today's date
+        today = pd.to_datetime(datetime.today().date())
+
+        # Convert 'Deal : Expected close date' to datetime
+        df['Deal : Expected close date'] = pd.to_datetime(df['Deal : Expected close date'], dayfirst=True, errors='coerce')
+
+        # Adjust 'Expected close date' greater than today
+        df['Adjusted Close Date'] = df['Deal : Expected close date'].apply(lambda x: today if x > today else x)
+
+        # Calculate Recency (if expected close date > today, recency will be negative)
+        last_purchase = df.groupby(id_field)['Adjusted Close Date'].max().reset_index()
+        last_purchase.columns = [id_field, 'CloseDateMax']
+        last_purchase['Recency'] = (today - last_purchase['CloseDateMax']).dt.days
+
+        # If the original expected close date is greater than today, set Recency as negative
+        last_purchase['Recency'] = last_purchase.apply(
+            lambda row: -(row['Recency']) if row['CloseDateMax'] == today else row['Recency'], axis=1
+        )
+
+        # Merge Recency into RFM DataFrame
+        df_rfm = pd.merge(df_rfm, last_purchase[[id_field, 'Recency']], how='left', on=id_field)
+
+        # Calculate Frequency
+        df_freq = df.dropna(subset=[id_field]).groupby(id_field)['Deal : Expected close date'].count().reset_index()
+        df_freq.columns = [id_field, 'Frequency']
+        df_rfm = pd.merge(df_rfm, df_freq, on=id_field)
+
+        # Calculate Monetary
+        df['Deal : Total Deal Value'] = df['Deal : Total Deal Value'].astype(str).replace('[\$,]', '', regex=True).astype(float)
+        df_mone = df.groupby(id_field)['Deal : Total Deal Value'].sum().reset_index()
+        df_mone.columns = [id_field, 'Monetary']
+        df_rfm = pd.merge(df_rfm, df_mone, on=id_field)
+
         return df_rfm
 
 

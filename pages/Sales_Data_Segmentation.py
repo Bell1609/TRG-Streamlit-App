@@ -319,8 +319,8 @@ if deals_file and accounts_file:
         st.markdown('**Select Columns for Merging DataFrames**')
 
         # Ensure mandatory fields are selected
-        selected_deals_columns = st.multiselect('Select Deals Columns:', deals_columns, default=mandatory_deals_fields)
-        selected_accounts_columns = st.multiselect('Select Accounts Columns:', accounts_columns, default=mandatory_accounts_fields)
+        selected_deals_columns = st.sidebar.multiselect('Select Deals Columns:', deals_columns, default=mandatory_deals_fields)
+        selected_accounts_columns = st.sidebar.multiselect('Select Accounts Columns:', accounts_columns, default=mandatory_accounts_fields)
 
         if not all(field in selected_deals_columns for field in mandatory_deals_fields):
             st.error(f'You must select these mandatory fields from the Deals data: {mandatory_deals_fields}')
@@ -346,17 +346,23 @@ if deals_file and accounts_file:
             default_accounts_id_field = None  # Remove the default value if it doesn't exist
 
         # Create selectboxes with the default values
-        deals_id_field = st.selectbox('Select Deals ID Field:', selected_deals_columns, index=selected_deals_columns.index(default_deals_id_field) if default_deals_id_field else 0)
-        accounts_id_field = st.selectbox('Select Accounts ID Field:', selected_accounts_columns, index=selected_accounts_columns.index(default_accounts_id_field) if default_accounts_id_field else 0)
+        deals_id_field = st.sidebar.selectbox('Select Deals ID Field:', selected_deals_columns, index=selected_deals_columns.index(default_deals_id_field) if default_deals_id_field else 0)
+        accounts_id_field = st.sidebar.selectbox('Select Accounts ID Field:', selected_accounts_columns, index=selected_accounts_columns.index(default_accounts_id_field) if default_accounts_id_field else 0)
 
         # Filter deals data by 'Deal : Probability (%)'
-        prob_min, prob_max = st.slider('Select Probability (%) Range:', 0, 100, (0, 100))
+        prob_min, prob_max = st.sidebar.slider('Select Probability (%) Range:', 0, 100, (0, 100))
         deals_data['Deal : Probability (%)'] = deals_data['Deal : Probability (%)'].astype(int)
         deals_data = deals_data[(deals_data['Deal : Probability (%)'] >= prob_min) & (deals_data['Deal : Probability (%)'] <= prob_max)]
 
         # Checkbox for filtering by 'TRG Customer'
-        filter_trg_customer = st.checkbox('Filter by TRG Customer')
+        filter_trg_customer = st.sidebar.checkbox('Filter by TRG Customer')
+        
+        # Add a sidebar selectbox for Deal: Project type
+        if 'Deal : Project type' in deals_data.columns:
+            selected_project_type = st.sidebar.multiselect('Select Project Type:', deals_data['Deal : Project type'].unique())
 
+        deals_data = deals_data[(deals_data['Deal : Project type'].isin(selected_project_type))]
+      
         
         try:
             # Merge dataframes based on selected ID fields
