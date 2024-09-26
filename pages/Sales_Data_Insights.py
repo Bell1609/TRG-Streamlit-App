@@ -353,10 +353,15 @@ if deals_file:
         type_options = deals_data['Deal : Project type'].unique()
         selected_types = st.sidebar.multiselect('Select Product Type', options=type_options, default=type_options)
         
+        # Add a sidebar selectbox for 'Deal : Type of Renewal' if it exists in the dataset
+        selected_type_of_renewal = st.sidebar.multiselect('Select Type of Renewal:', deals_data['Deal : Type of Renewal'].unique())
+
+        
         # Filtering based on sidebar selections
         deals_data_filtered = deals_data[
             (deals_data['Deal : Deal stage'].isin(selected_stages)) &
             (deals_data['Deal : Project type'].isin(selected_types)) &
+            (deals_data['Deal : Type of Renewal'].isin(selected_type_of_renewal)) &
             (deals_data['Deal : Expected close date'].dt.year.isin(year_options))
         ]
 
