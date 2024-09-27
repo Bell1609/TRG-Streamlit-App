@@ -165,33 +165,6 @@ def set_file_permissions(file_path):
     except OSError as e:
         print(f"OS error occurred: {e}")
 
-# def data_profiling(df, df_name):
-#     st.markdown(f'**{df_name} Data Profiling**')
-#     st.write(f"Data Types for {df_name} data:")
-#     st.write(df.dtypes)
-#     st.write(f"Missing Values in {df_name} data:")
-#     st.write(df.isnull().sum())
-#     st.write(f"Basic Statistics for {df_name} data:")
-#     st.write(df.describe())
-    
-# def data_profiling(df, df_name):
-#     st.markdown(f'**{df_name} Data Profiling**')
-#     st.write(f"Basic Statistics for {df_name} data:")
-    
-#     # Select only numeric columns for statistics
-#     numeric_df = df.select_dtypes(include=['number'])
-
-#     # Get the descriptive statistics using describe()
-#     desc = numeric_df.describe()
-
-#     # Calculate the sum for each numeric column and append it as a new row
-#     sum_row = pd.DataFrame(numeric_df.sum(), columns=['sum']).T
-
-#     # Concatenate the sum row with the describe() output
-#     desc_with_sum = pd.concat([desc, sum_row])
-
-#     # Display the statistics in Streamlit
-#     st.write(desc_with_sum)
 
 
 def data_profiling(df, df_name):
@@ -232,7 +205,7 @@ def display_sweetviz_report(report_name):
 
 st.sidebar.success('Select the ticket data or sales data')
 
-st.header('Sales Data Segmenting')
+st.header('Sales Data Insights')
 
 st.subheader('Data Load')
 
@@ -353,25 +326,21 @@ if deals_file:
         type_options = deals_data['Deal : Project type'].unique()
         selected_types = st.sidebar.multiselect('Select Product Type', options=type_options, default=type_options)
         
-        # Add a sidebar selectbox for 'Deal : Type of Renewal' if it exists in the dataset
-        selected_type_of_renewal = st.sidebar.multiselect('Select Type of Renewal:', deals_data['Deal : Type of Renewal'].unique())
-
-        
         # Filtering based on sidebar selections
         deals_data_filtered = deals_data[
             (deals_data['Deal : Deal stage'].isin(selected_stages)) &
             (deals_data['Deal : Project type'].isin(selected_types)) &
-            (deals_data['Deal : Type of Renewal'].isin(selected_type_of_renewal)) &
             (deals_data['Deal : Expected close date'].dt.year.isin(year_options))
         ]
 
+        # Add a sidebar selectbox for 'Deal : Type of Renewal' if it exists in the dataset
+        renewal_options = deals_data_filtered['Deal : Type of Renewal'].unique()
+        selected_type_of_renewal = st.sidebar.multiselect('Select Type of Renewal:', options=renewal_options, default=renewal_options)
+        deals_data_filtered = deals_data_filtered[(deals_data_filtered['Deal : Type of Renewal'].isin(selected_type_of_renewal))]
+        
         st.markdown('Processed and Filtered Deals Data')
         st.dataframe(deals_data_filtered)  
-        
-        # Display all columns and their data types
-        column_types = deals_data_filtered.dtypes
-        st.subheader("Deals Data Filtered: Column Data Types")
-        st.write(column_types)
+    
         
         #Data profiling before segmentation
         data_profiling(deals_data_filtered, 'Deals')

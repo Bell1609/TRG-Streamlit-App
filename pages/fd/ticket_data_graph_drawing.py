@@ -5,6 +5,7 @@ import pandas as pd
 import seaborn as sns
 import squarify
 import sweetviz as sv
+import matplotlib.dates as mdates
 
 from matplotlib.ticker import MaxNLocator
 from matplotlib.patches import Patch
@@ -407,13 +408,55 @@ class Ticket_Graph_Drawing():
         # Set the x-axis ticks manually to display every 3rd month
         months = df_performance['Month'].unique()
         ax1.set_xticks(range(0, len(months), 3))  # Tick positions every 3 months
-        ax1.set_xticklabels(months[::3], rotation=45, ha='right')
+        ax1.set_xticklabels(months[::3], rotation=90, ha='right')
 
         # Adjust layout for better visualization
         plt.tight_layout()
 
         # Return both the figure and the primary axis
         return fig, ax1
+
+
+    def plot_valid_vs_total_company_count(self, combined_df):
+        """
+        This function visualizes the 'Valid_Company_Count' and 'Company_Count' from the combined DataFrame.
+        The x-axis displays every 3 months for better readability.
+        
+        Parameters:
+        combined_df (pd.DataFrame): DataFrame containing 'Month', 'Valid_Company_Count', and 'Company_Count' columns.
+        
+        Returns:
+        fig (matplotlib.figure.Figure): The figure containing the plot.
+        """
+        # Convert 'Month' column to datetime if not already in datetime format
+        if not pd.api.types.is_datetime64_any_dtype(combined_df['Month']):
+            combined_df['Month'] = pd.to_datetime(combined_df['Month'])
+
+        # Create a figure and axis for the plot
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+
+        # Plot the Valid_Company_Count and Company_Count on the same axis
+        sns.lineplot(x='Month', y='Valid_Company_Count', data=combined_df, ax=ax1, marker='o', label='Valid Company Count', color='blue')
+        sns.lineplot(x='Month', y='Company_Count', data=combined_df, ax=ax1, marker='o', label='Company Count', color='orange')
+
+        # Set title and labels
+        ax1.set_title('Valid Company Count vs Company Count')
+        ax1.set_xlabel('Month')
+        ax1.set_ylabel('Count')
+
+        # Set the x-axis ticks to display every 3 months
+        ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+        ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+
+        # Rotate x-axis labels for better readability
+        ax1.tick_params(axis='x', rotation=90)
+
+        # Show the legend in the upper left corner
+        ax1.legend(loc='upper left')
+
+        # Return the figure
+        return fig
+
 
 
     

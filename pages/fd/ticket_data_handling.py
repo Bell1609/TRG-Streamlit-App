@@ -312,3 +312,12 @@ class Ticket_Data():
         df_companies['Valid Maintenance'] = 'Yes'
 
         return df_companies[['Month', 'Company Name', 'Valid Maintenance']]
+
+    
+
+
+
+
+
+
+
