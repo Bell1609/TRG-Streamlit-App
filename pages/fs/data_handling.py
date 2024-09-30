@@ -322,3 +322,22 @@ class Data_Handling():
     def product_filter(self, product_column, selected_products):
         # Split the 'Deal : Product' column by comma and strip any spaces, then check if any selected product is in the list
         return product_column.apply(lambda x: any(product in [p.strip() for p in x.split(',')] for product in selected_products))
+
+    def data_profiling(self, df, df_name):
+        st.markdown(f'**{df_name} Data Profiling**')
+        st.write(f"Basic Statistics for {df_name} data:")
+        
+        # Select only numeric columns for statistics
+        numeric_df = df.select_dtypes(include=['number'])
+
+        # Get the descriptive statistics using describe()
+        desc = numeric_df.describe()
+
+        # Calculate the sum for each numeric column and append it as a new row
+        sum_row = pd.DataFrame(numeric_df.sum(), columns=['sum']).T
+
+        # Concatenate the sum row with the describe() output
+        desc_with_sum = pd.concat([desc, sum_row])
+
+        # Display the statistics in Streamlit
+        st.write(desc_with_sum)
