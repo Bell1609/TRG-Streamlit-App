@@ -21,68 +21,6 @@ from fs.graph_drawing import Graph_Drawing
 data_handling = Data_Handling()
 graph_drawing = Graph_Drawing()
 
-def convert_mixed_columns_to_string(df):
-        for col in df.columns:
-            if df[col].dtype == 'object' and pd.api.types.infer_dtype(df[col]) == 'mixed':
-                try:
-                    df[col] = df[col].astype(str)
-                    st.warning(f"Column '{col}' contained mixed types. It has been converted to string.")
-                except Exception as e:
-                    st.error(f"Failed to convert column '{col}' to string: {e}")
-        return df
-
-
-def clean_and_convert_amount_columns(df):
-    # Define the columns to process
-    columns_to_process = [
-        'Deal : Total Deal Value',
-        'Deal : Deal value in Base Currency',
-        'Deal : Expected deal value'
-        ]
-        
-    for col in columns_to_process:
-        if col in df.columns:
-            # Remove '$' character and convert to numeric
-            df[col] = df[col].replace('[\$,]', '', regex=True).astype(float)
-        
-    return df
-    
-# Function to convert date columns to datetime format
-def convert_date_columns_to_date(df):
-    date_columns = [
-        'Deal : Closed date', 
-        'Deal : Expected close date', 
-        'Deal : Created at', 
-        'Deal : Updated at', 
-        'Deal : Last assigned at', 
-        'Deal : First assigned at', 
-        'Deal : Deal stage updated at', 
-        'Deal : Last activity date', 
-        'Deal : Expected go live date/MED', 
-        'Deal : Tentative start date/MSD', 
-        'Deal : Commitment Expiration Date'
-    ]
-    
-    for col in date_columns:
-        if col in df.columns:
-            # Convert to datetime using the format YYYY-MM-DD
-            df[col] = pd.to_datetime(df[col], dayfirst=True, format='mixed', errors='coerce')
-    
-    return df
-
-# Main preprocessing function
-def preprocess_data(df):
-    # Clean and convert amount columns
-    df = clean_and_convert_amount_columns(df)
-    
-    # Define mixed columns to convert to strings (replace with actual columns if needed)
-    df = convert_mixed_columns_to_string(df)
-    
-    # Convert date columns to datetime format
-    df = convert_date_columns_to_date(df)
-    
-    return df
-
 # Function to generate ydata_profiling report and save it
 def generate_ydata_profiling_report(df, title):
     report = ProfileReport(df, title=title)
@@ -222,8 +160,8 @@ if deals_file and accounts_file:
     
     if not deals_data.empty and not accounts_data.empty:
         # Convert columns with mixed types to strings
-        deals_data = preprocess_data(deals_data)
-        accounts_data = preprocess_data(accounts_data)
+        deals_data = data_handling.preprocess_data(deals_data)
+        accounts_data = data_handling.preprocess_data(accounts_data)
         deal_output = create_excel(deals_data)
         accounts_output = create_excel(accounts_data)
 
