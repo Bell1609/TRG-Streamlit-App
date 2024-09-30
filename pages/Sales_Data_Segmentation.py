@@ -58,14 +58,14 @@ def set_file_permissions(file_path):
     except OSError as e:
         print(f"OS error occurred: {e}")
 
-def data_profiling(df, df_name):
-    st.markdown(f'**{df_name} Data Profiling**')
-    st.write(f"Data Types for {df_name} data:")
-    st.write(df.dtypes)
-    st.write(f"Missing Values in {df_name} data:")
-    st.write(df.isnull().sum())
-    st.write(f"Basic Statistics for {df_name} data:")
-    st.write(df.describe())
+# def data_profiling(df, df_name):
+#     st.markdown(f'**{df_name} Data Profiling**')
+#     st.write(f"Data Types for {df_name} data:")
+#     st.write(df.dtypes)
+#     st.write(f"Missing Values in {df_name} data:")
+#     st.write(df.isnull().sum())
+#     st.write(f"Basic Statistics for {df_name} data:")
+#     st.write(df.describe())
 
 # Function to generate and display Sweetviz report
 def generate_sweetviz_report(df, df_name):
@@ -82,6 +82,25 @@ def display_sweetviz_report(report_name):
     except UnicodeDecodeError:
         st.error("Error decoding the Sweetviz report. The file might contain characters that are not compatible with the default encoding.")
         
+# Main preprocessing function
+def preprocess_data(df):
+    
+    # Check if 'Deal : id' column exists before converting to string
+    if 'Deal : id' in df.columns:
+        df['Deal : id'] = df['Deal : id'].astype(str)
+
+    # Clean and convert amount columns
+    df = data_handling.clean_and_convert_amount_columns(df)
+    # Drop the original columns
+    
+    
+    # Define mixed columns to convert to strings (replace with actual columns if needed)
+    df = data_handling.convert_mixed_columns_to_string(df)
+    
+    # Convert date columns to datetime format
+    df = data_handling.convert_date_columns_to_date(df)
+    
+    return df
 
 st.sidebar.success('Select the ticket data or sales data')
 
@@ -160,8 +179,8 @@ if deals_file and accounts_file:
     
     if not deals_data.empty and not accounts_data.empty:
         # Convert columns with mixed types to strings
-        deals_data = data_handling.preprocess_data(deals_data)
-        accounts_data = data_handling.preprocess_data(accounts_data)
+        deals_data = preprocess_data(deals_data)
+        accounts_data = preprocess_data(accounts_data)
         deal_output = create_excel(deals_data)
         accounts_output = create_excel(accounts_data)
 
@@ -186,8 +205,8 @@ if deals_file and accounts_file:
         st.subheader('Data Exploration')
 
         #Data profiling before segmentation
-        data_profiling(deals_data, 'Deals')
-        data_profiling(accounts_data, 'Accounts')
+        data_handling.data_profiling(deals_data, 'Deals')
+        data_handling.data_profiling(accounts_data, 'Accounts')
         # # Add buttons to generate Sweetviz reports
         # if st.button('Generate Profiling Reports'):
         #     # deals_report = generate_sweetviz_report(deals_data, 'Deals')
