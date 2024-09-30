@@ -61,26 +61,6 @@ def set_file_permissions(file_path):
 
 
 
-def data_profiling(df, df_name):
-    st.markdown(f'**{df_name} Data Profiling**')
-    st.write(f"Basic Statistics for {df_name} data:")
-    
-    # Select only numeric columns for statistics
-    numeric_df = df.select_dtypes(include=['number'])
-
-    # Get the descriptive statistics using describe()
-    desc = numeric_df.describe()
-
-    # Calculate the sum for each numeric column and append it as a new row
-    sum_row = pd.DataFrame(numeric_df.sum(), columns=['sum']).T
-
-    # Concatenate the sum row with the describe() output
-    desc_with_sum = pd.concat([desc, sum_row])
-
-    # Display the statistics in Streamlit
-    st.write(desc_with_sum)
-
-
 # Function to generate and display Sweetviz report
 def generate_sweetviz_report(df, df_name):
     report = sv.analyze(df)
@@ -283,7 +263,7 @@ if deals_file:
         
         # Project category options: Recurring and Non-Recurring
         project_categories = ['Recurring Projects', 'Non-Recurring Projects']
-        selected_categories = st.sidebar.multiselect('Select Project Category', options=project_categories)
+        selected_categories = st.sidebar.multiselect('Select Project Category', options=project_categories, default=project_categories)
 
         # Validate 'Project Category' selection
         if not selected_categories:
@@ -452,7 +432,7 @@ if deals_file:
     
         
         #Data profiling before segmentation
-        data_profiling(deals_data_filtered, 'Deals')
+        data_handling.data_profiling(deals_data_filtered, 'Deals')
         
         # Set default report file paths (in the same folder as the application)
         deals_report_file_path = 'Deals Data Report.html'
