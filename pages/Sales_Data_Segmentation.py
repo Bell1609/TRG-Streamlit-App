@@ -434,15 +434,15 @@ if deals_file and accounts_file:
         
         if st.session_state.stage >= 1:
             # Creates RFM dataframe for the segmentation
-            rfm_data = data_handling.create_rfm_dataframe(merged_data, mandatory_accounts_fields)  # Use the new ID column for RFM segmentation
-            # st.markdown('**RFM Data Frame**')
-            # st.dataframe(rfm_data)
+            rfm_data = data_handling.create_rfm_dataframe(merged_data, default_accounts_id_field)  # Use the new ID column for RFM segmentation
+            st.markdown('**RFM Data Frame**')
+            st.dataframe(rfm_data)
             
             # Measure the start time
             start_time = time.time()
 
             # Creates dataframe with clusters from kmeans
-            kmeans_data, cluster_centers, silhouette_score, best_k, best_random_state = data_handling.create_kmeans_dataframe(rfm_data, accounts_id_field)
+            kmeans_data, cluster_centers, silhouette_score, best_k, best_random_state = data_handling.create_kmeans_dataframe(rfm_data, default_accounts_id_field)
             # st.markdown("Cluster Center Dataframe")
             # st.dataframe(cluster_centers)
             # st.markdown("Kmeans Dataframe")
