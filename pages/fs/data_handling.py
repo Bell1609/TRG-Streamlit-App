@@ -55,7 +55,7 @@ class Data_Handling():
 
         # Calculate Monetary
         #df['Deal : Total Deal Value'] = df['Deal : Total Deal Value'].astype(str).replace('[\$,]', '', regex=True).astype(float)
-        df['Deal : Total Deal Value'] = pd.to_numeric(df['Deal : Total Deal Value'].str.replace('[\$,]', '', regex=True), errors='coerce')
+        #df['Deal : Total Deal Value'] = pd.to_numeric(df['Deal : Total Deal Value'].str.replace('[\$,]', '', regex=True), errors='coerce')
 
         df_mone = df.groupby(id_field)['Deal : Total Deal Value'].sum().reset_index()
         df_mone.columns = [id_field, 'Monetary']
