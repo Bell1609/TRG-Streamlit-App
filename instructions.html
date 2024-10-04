@@ -1,106 +1,32 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-
 <head>
-    <title>This is the title of the webpage!</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            background-color: #f4f4f4;
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        h3 {
-            color: #008896;
-            text-align: center;
-        }
-
-        p {
-            margin-bottom: 20px;
-        }
-
-        ul {
-            padding-left: 20px;
-        }
-
-        ul ul {
-            margin-left: 20px;
-            list-style-type: square;
-        }
-
-        li {
-            margin-bottom: 10px;
-        }
-
-        strong {
-            color: #F05023;
-        }
-    </style>
+    <title>Test Page</title>
 </head>
-
 <body>
-    <div class="container">
-        <h3>Relevant resources **<strong>MUST KNOW</strong>**</h3>
-        <ul>
-            <li>The TRG Customer segmentating for sales data uses RFM (Recency, Frequency, Monetary) analysis. Therefore,
-                anyone who wants to learn more
-                about RFM analysis can visit <a href="https://www.putler.com/rfm-analysis/?ref=200lab.io">this
-                    website</a></li>
-            <li>The clustering method used for this app is K-Means clustering method. For more information, visit <a
-                    href="https://neptune.ai/blog/k-means-clustering">this website</a></li>
-        </ul>
-        <h3>How to use this application</h3>
-        <p>This application is intended for segmenting TRG Customer data extracted from FreshSales and FreshDesk. However,
-            any sales and tickets data will work if there is enough information.</p>
-        <p>
-            The <strong>required</strong> fields include:
-        <ul>
-            <li>For sales RFM segmenting:
-                <ul>
-                    <li>AccountID: The ID of the account who did the purchase</li>
-                    <li>CloseDate: The date that the deal was closed on</li>
-                    <li>DealValue: The value of deals (in a consistent currency)</li>
-                    <li>DealStage: The status of the deal (<strong>Won</strong> for deals won, and <strong>Lost</strong>
-                        for deals lost, and others)</li>
-                </ul>
-            </li>
-            <li>For tickets segmenting:
-                <ul>
-                    <li>Group Company: The group that the client's company belongs to</li>
-                    <li>Brand: The brand of the client's company</li>
-                    <li>Client code: The client code provided by FreshDesk</li>
-                    <li>TRG Customer: Validation TRG Customer(<strong>Yes</strong> or
-                        <strong>No</strong>)
-                    </li>
-                    <li>Closed time: The time that the ticket was closed</li>
-                </ul>
-            </li>
-        </ul>
-        <strong>WARNING:</strong> all of the columns above need to be exactly named like that, or else the system won't
-        work.
-        </p>
-        <h3>What is this app doing?</h3>
-        <p>
-        <p>This app is for TRG Customer segmentation, a way to divide customers into groups to strategize approaches to
-            different customer clusters.</p>
-        <p>By using the data provided, this app uses relevant fields to divide the customer base.</p>
-        <strong>Note:</strong> when divided, the clusters will not the ranked, e.g. cluster 1 is not 'better' or
-        'worse' than cluster 2 customers.
-        You will also have the option to download the data with every companies clustered, which can be used for
-        your own analysis.
-        </p>
-    </div>
+    <h3>What is this application doing </h3>
+    <p>This application is built for data insights and data segmentation purpose. It will give you underline filtered data rows, visualization of filtered data for some important key metrics, basic statistics information, such as:</p>
+    <ul>
+        <li><strong>Count:</strong> Number of non-null entries </li>
+        <li><strong>Mean:</strong> Average of the column.</li>
+        <li><strong>Standard Deviation (std):</strong> Measure of spread of the data.</li>
+        <li><strong>Min/Max:</strong> Minimum and maximum values.</li>
+        <li><strong>Percentiles (25%, 50%, 75%):</strong> Quartiles, which describe the distribution..</li>
+    </ul>
+    <h3>How to Use</h3>
+    <p>The application is user-friendly and simple to navigate. Follow these steps to get started:</p>
+    <ul>
+        <li><strong>Select the report page:</strong> Select the report page you need on the sidebar, e.g Sales Data Insights, Tickets Data Insigts,...</li>
+        <li><strong>Load the required data:</strong> Upload your data files from Freshsales or Freshdesk, making sure it includes all necessary fields.</li>
+        <li><strong>Select filters:</strong> Use the filter options in the sidebar to customize your report or chart based on specific criteria. You can easily drill down into the data or narrow it down to meet your specific needs.</li>
+        <li><strong>Generate reports and charts:</strong> Click the relevant buttons to create the reports or charts you need, which will be displayed in the main screen area.</li>
+    </ul>
+    <h3>Data Source</h3>
+    <p>The data source requirements vary based on the type of report you are generating:</p>
+    <ul>
+        <li><strong>Sales Reports:</strong> Requires Deals and/or Accounts data from Freshsales, including all fields available in Freshsales.</li>
+        <li><strong>Ticket Reports:</strong> Requires Ticket data from Freshdesk, with all relevant fields included.</li>
+        <li><strong>Capacity Reports:</strong> Requires booking data, which should be in Excel format with separate columns for "Month", "Name", and "Task Type".</li>
+    </ul>
 </body>
-
 </html>
