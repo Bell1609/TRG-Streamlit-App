@@ -325,7 +325,7 @@ if deals_file:
             deals_data_filtered['Deal : Product'] = deals_data_filtered['Deal : Product'].str.strip(', ')
         else:
             st.error("No data available after filtering.")
-
+            
         # Extract unique products from all 'Deal : Product 1' to 'Deal : Product 4' columns, excluding NaN values
         unique_products = pd.concat([
             deals_data_filtered['Deal : Product 1'],
@@ -337,7 +337,7 @@ if deals_file:
 
         # Multi-selection for Product Vendor with options: "Infor", "TRG", and "Others"
         vendor_options = ['Infor', 'TRG', 'Others']
-        selected_vendors = st.sidebar.multiselect('Select Product Vendor', options=vendor_options)
+        selected_vendors = st.sidebar.multiselect('Select Product Vendor', options=vendor_options, default=vendor_options)
 
         # Validate that at least one vendor is selected
         if not selected_vendors:
@@ -375,7 +375,7 @@ if deals_file:
         # Ensure that the 'Deal : Product' column exists before trying to filter
         if 'Deal : Product' in deals_data_filtered.columns:
             # Filter the deals based on selected filters
-            deals_data_filtered = deals_data_filtered[(data_handling.product_filter(deals_data_filtered['Deal : Product'], selected_products))]
+            deals_data_filtered = data_handling.filter_by_products(deals_data_filtered, selected_products)
         else:
             st.error("'Deal : Product' column does not exist for filtering.")
 
@@ -392,47 +392,45 @@ if deals_file:
             st.stop()  # Stop execution if no project type is selected
 
         deals_data_filtered = deals_data_filtered[(deals_data_filtered['Deal : Owner'].isin(selected_owners))]
+        
 
-        # Initialize a dictionary to hold the aggregated values for all selected products
-        total_values = {
-            'Deal Software revenue': 0,
-            'Deal Software cost': 0,
-            'Deal ASM revenue': 0,
-            'Deal ASM cost': 0,
-            'Deal Service revenue': 0,
-            'Deal Service cost': 0,
-            'Deal Cons days': 0,
-            'Deal PM days': 0,
-            'Deal PA days': 0,
-            'Deal Technical days': 0,
-            'Deal Hosting revenue': 0,
-            'Deal Hosting cost': 0,
-            'Deal Managed service revenue': 0,
-            'Deal Managed service cost': 0
-        }
+        new_columns = [
+            'Deal Software Revenue',
+            'Deal Software Cost',
+            'Deal ASM Revenue',
+            'Deal ASM Cost',
+            'Deal Service Revenue',
+            'Deal Service Cost',
+            'Deal Cons Days',
+            'Deal PM Days',
+            'Deal PA Days',
+            'Deal Technical Days',
+            'Deal Hosting Revenue',
+            'Deal Hosting Cost',
+            'Deal Managed Service Revenue',
+            'Deal Managed Service Cost'
+        ]
 
-        # Loop through all selected products and aggregate the values
-        for product in selected_products:
-            product_values = data_handling.get_product_values(deals_data_filtered, product, total_values)
+        # Initialize the new columns in the dataframe with 0 for each row
+        for col in new_columns:
+            deals_data_filtered[col] = 0
 
-            # Add the product-specific values to the total values
-            for key in total_values:
-                total_values[key] += product_values[key]
 
-        # Now, let's insert the total values as new columns into deals_data_filtered
-        for key in total_values:
-            # Add the total value as a new column to the filtered deals DataFrame
-            deals_data_filtered[key] = total_values[key]
+        # Step 3: Call the function for each selected product
+        new_deals_data_filtered = data_handling.get_product_values(deals_data_filtered, selected_products)
 
-           
+        # Now, deals_data_filtered will have the new columns populated with accumulated values for the selected products.
+
+
+
         st.markdown('Processed and Filtered Deals Data')
         # Drop columns where all rows are NaN
-        deals_data_filtered = deals_data_filtered.dropna(axis=1, how='all')
-        st.dataframe(deals_data_filtered)  
+        new_deals_data_filtered = new_deals_data_filtered.dropna(axis=1, how='all')
+        st.dataframe(new_deals_data_filtered)  
     
         
         #Data profiling before segmentation
-        data_handling.data_profiling(deals_data_filtered, 'Deals')
+        data_handling.data_profiling(new_deals_data_filtered, 'Deals')
         
         # Set default report file paths (in the same folder as the application)
         deals_report_file_path = 'Deals Data Report.html'
@@ -462,23 +460,23 @@ if deals_file:
         # Drop-down box to allow the user to select a revenue/cost type
         selected_metric = st.selectbox(
             "Select Revenue or Cost Type to Visualize",
-            options=list(total_values.keys())
+            options=new_columns
         )
 
         # Check if the selected column exists in the DataFrame
-        if selected_metric in deals_data_filtered.columns:
+        if selected_metric in new_deals_data_filtered.columns:
             # Ensure 'Date' column is in datetime format
-            deals_data_filtered['Date'] = pd.to_datetime(deals_data_filtered['Deal : Expected close date'])
+            new_deals_data_filtered['Date'] = pd.to_datetime(new_deals_data_filtered['Deal : Expected close date'])
 
             # Sort by date to ensure proper ordering
-            deals_data_filtered = deals_data_filtered.sort_values('Date')
+            new_deals_data_filtered = new_deals_data_filtered.sort_values('Date')
 
             # Group by month and sum the selected metric
-            trend_data = deals_data_filtered.resample('M', on='Date')[selected_metric].sum().reset_index()
+            trend_data = new_deals_data_filtered.resample('M', on='Date')[selected_metric].sum().reset_index()
 
             # Calculate the mean and sum value for the metric across all months
-            mean_value = deals_data_filtered[selected_metric].mean()
-            sum_value = deals_data_filtered[selected_metric].sum()
+            mean_value = new_deals_data_filtered[selected_metric].mean()
+            sum_value = new_deals_data_filtered[selected_metric].sum()
 
             # Calculate the total number of months between the min and max date
             date_range_in_months = (trend_data['Date'].dt.year - trend_data['Date'].dt.year.min()) * 12 + trend_data['Date'].dt.month - trend_data['Date'].dt.month.min()
@@ -534,3 +532,19 @@ if deals_file:
             st.error(f"The column '{selected_metric}' does not exist in the data.")
 
 
+        # Generate the downloadable Excel files based on the filtered data        
+        output = create_excel(deals_data) # Initializes the Excel sheet
+        #deal_ouput = create_excel(deals_data_filtered)
+        
+        # Allow users to download Deals data with assigned clusters
+        st.download_button(
+            label='Download Raw Deals Data',
+            data=output,
+            file_name='FS Raw Deals.xlsx',
+            mime='application/vnd.ms-excel'
+        )
+        
+
+        # Assuming df is your DataFrame
+        # Call the function to display column sums
+        data_handling.display_column_sums_streamlit(new_deals_data_filtered)
