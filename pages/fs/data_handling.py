@@ -177,7 +177,7 @@ class Data_Handling():
             return False
         return True
 
-    # Define function to extract revenue, cost, and other values for the selected product
+    """  # Define function to extract revenue, cost, and other values for the selected product
     def get_product_values(self, df, product, product_values):
         # Loop through all product columns (Deal : Product 1 to Deal : Product 4)
         for i in range(1, 5):
@@ -214,19 +214,51 @@ class Data_Handling():
                     if col in df.columns:
                         product_values[key] += product_rows[col].sum()
 
-        return product_values
+        return product_values """
+    
+    # Step 2: Define the function to accumulate values for each product
+    def get_product_values(self, df, selected_products):
+        # Iterate through each product in the selected_products list
+        for product in selected_products:
+            # Loop through all product columns (Deal : Product 1 to Deal : Product 4)
+            for i in range(1, 5):
+                product_column = f'Deal : Product {i}'
+
+                # Check if the product column exists in the dataframe
+                if product_column not in df.columns:
+                    continue
+
+                # Iterate through each row in the dataframe
+                for idx, row in df.iterrows():
+                    # Check if the product matches in the current product column
+                    if row[product_column] == product:
+                        # List of columns to accumulate values from
+                        columns_to_check = {
+                            'Deal Software Revenue': f'Deal : Software revenue: Product {i}',
+                            'Deal Software Cost': f'Deal : Software cost: Product {i}',
+                            'Deal ASM Revenue': f'Deal : ASM revenue: Product {i}',
+                            'Deal ASM Cost': f'Deal : ASM cost: Product {i}',
+                            'Deal Service Revenue': f'Deal : Service revenue: Product {i}',
+                            'Deal Service Cost': f'Deal : Service cost: Product {i}',
+                            'Deal Cons Days': f'Deal : Cons days: Product {i}',
+                            'Deal PM Days': f'Deal : PM days: Product {i}',
+                            'Deal PA Days': f'Deal : PA days: Product {i}',
+                            'Deal Technical Days': f'Deal : Technical days: Product {i}',
+                            'Deal Hosting Revenue': f'Deal : Hosting revenue: Product {i}',
+                            'Deal Hosting Cost': f'Deal : Hosting cost: Product {i}',
+                            'Deal Managed Service Revenue': f'Deal : Managed service revenue: Product {i}',
+                            'Deal Managed Service Cost': f'Deal : Managed service cost: Product {i}',
+                        }
+
+                        # Accumulate the values from the respective columns if they exist
+                        for key, col in columns_to_check.items():
+                            if col in df.columns:
+                                df.at[idx, key] += row[col]  # Accumulate value in the corresponding new column
+
+        return df
 
 
 
-    """ def convert_mixed_columns_to_string(self, df):
-            for col in df.columns:
-                if df[col].dtype == 'object' and pd.api.types.infer_dtype(df[col]) == 'mixed':
-                    try:
-                        df[col] = df[col].astype(str)
-                        st.warning(f"Column '{col}' contained mixed types. It has been converted to string.")
-                    except Exception as e:
-                        st.error(f"Failed to convert column '{col}' to string: {e}")
-            return df """
 
     def convert_mixed_columns_to_string(self, df):
         for col in df.columns:
@@ -318,10 +350,30 @@ class Data_Handling():
         
         return df
 
-    # Function to check if any selected product is in the 'Deal : Product' column
-    def product_filter(self, product_column, selected_products):
-        # Split the 'Deal : Product' column by comma and strip any spaces, then check if any selected product is in the list
-        return product_column.apply(lambda x: any(product in [p.strip() for p in x.split(',')] for product in selected_products))
+    def filter_by_products(self, df, selected_products):
+        # Initialize a DataFrame to store filtered rows
+        filtered_df = pd.DataFrame()
+
+        # Loop through each product in selected_products
+        for product in selected_products:
+            # Initialize a mask that is False by default
+            product_mask = pd.Series([False] * len(df), index=df.index)
+
+            # Check in 'Deal : Product 1' to 'Deal : Product 4'
+            for i in range(1, 5):
+                product_column = f'Deal : Product {i}'
+
+                # Ensure the column exists in the DataFrame
+                if product_column in df.columns:
+                    # Update mask to True for rows where the product matches
+                    product_mask |= df[product_column] == product
+
+            # Append rows where the product matches to the filtered DataFrame
+            filtered_df = pd.concat([filtered_df, df[product_mask]])
+
+        # Drop duplicates in case the same row matches multiple products
+        return filtered_df.drop_duplicates()
+
 
     def data_profiling(self, df, df_name):
         st.markdown(f'**{df_name} Data Profiling**')
@@ -341,3 +393,63 @@ class Data_Handling():
 
         # Display the statistics in Streamlit
         st.write(desc_with_sum)
+        
+
+    def display_column_sums_streamlit(self, df):
+        """
+        Display the sum of specified columns in the dataframe using Streamlit.
+
+        Parameters:
+        df (pd.DataFrame): The input dataframe containing the columns.
+        columns (list): A list of columns for which to calculate the sum.
+
+        Returns:
+        pd.DataFrame: A DataFrame showing the column name and corresponding sum.
+        """
+        
+        columns = [
+            'Deal : Total Deal Value',
+            'Deal : Total Cost',
+            'Deal : Gross Margin (GM)',
+            'Deal Software Revenue',
+            'Deal Software Cost',
+            'Deal ASM Revenue',
+            'Deal ASM Cost',
+            'Deal Service Revenue',
+            'Deal Service Cost',
+            'Deal Cons Days',
+            'Deal PM Days',
+            'Deal PA Days',
+            'Deal Technical Days',
+            'Deal Hosting Revenue',
+            'Deal Hosting Cost',
+            'Deal Managed Service Revenue',
+            'Deal Managed Service Cost'
+        ]
+        # Initialize a list to hold the column names and their corresponding sums
+        column_sums = []
+
+        # Loop through each column in the provided list
+        for column in columns:
+            if column in df.columns:
+                # Calculate the sum for the column
+                column_sum = df[column].sum(skipna=True)
+                # Append the column and its sum to the list
+                column_sums.append({'Column': column, 'Sum': column_sum})
+
+            else:
+                # Append the column with a sum of 0 if it's not found in the dataframe
+                column_sums.append({'Column': column, 'Sum': 0})
+        
+        # Convert the list of dictionaries into a DataFrame for display
+        sums_df = pd.DataFrame(column_sums)
+
+        # Display the DataFrame with formatted sums using Streamlit
+        st.write("### Column Sums")
+        st.dataframe(sums_df.style.format({'Sum': "{:,.2f}"}))
+
+        return sums_df
+
+
+
+
