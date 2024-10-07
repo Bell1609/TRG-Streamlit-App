@@ -22,61 +22,6 @@ data_handling = Data_Handling()
 graph_drawing = Graph_Drawing()
 
 
-# Function to generate ydata_profiling report and save it
-def generate_ydata_profiling_report(df, title):
-    report = ProfileReport(df, title=title)
-    report_file = f"{title} Report.html"  # Specify the file name
-    report.to_file(report_file)            # Save the report as an HTML file
-    return report_file                     # Return the file path
-
-# Display existing profiling report function
-def display_ydata_profiling_report(report_file_path):
-    try:
-        with open(report_file_path, 'r', encoding='utf-8') as f:
-            report_html = f.read()
-        components.html(report_html, height=700, scrolling=True)
-
-    except PermissionError:
-        st.error(f"Permission denied when trying to access {report_file_path}. Please check file permissions.")
-    except FileNotFoundError:
-        st.error(f"The file {report_file_path} does not exist. Please generate the report first.")
-    except OSError as e:
-        st.error(f"OS error occurred: {e}")
-    except UnicodeDecodeError:
-        st.error("Error decoding the profiling report. The file might contain incompatible characters.")
-        
-def set_file_permissions(file_path):
-    try:
-        os.chmod(file_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-        print(f"Permissions set to 644 for file: {file_path}")
-        # Check permissions after setting
-        permissions = oct(os.stat(file_path).st_mode)[-3:]
-        print(f"Current permissions: {permissions}")
-    except FileNotFoundError:
-        print(f"File not found: {file_path}")
-    except PermissionError:
-        print(f"Permission denied: {file_path}")
-    except OSError as e:
-        print(f"OS error occurred: {e}")
-
-
-
-# Function to generate and display Sweetviz report
-def generate_sweetviz_report(df, df_name):
-    report = sv.analyze(df)
-    report_name = f"{df_name}_report.html"
-    report.show_html(filepath=report_name, open_browser=False)
-    return report_name
-
-def display_sweetviz_report(report_name):
-    try:
-        with open(report_name, 'r', encoding='utf-8') as f:
-            report_html = f.read()
-        components.html(report_html, height=700, scrolling=True)
-    except UnicodeDecodeError:
-        st.error("Error decoding the Sweetviz report. The file might contain characters that are not compatible with the default encoding.")
-        
-
 st.header('Sales Data Insights')
 
 st.subheader('Data Load')
@@ -92,46 +37,7 @@ if 'stage' not in st.session_state:
 def click_button(stage):
     st.session_state.stage = stage
 
-def create_excel(df):
-    output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False)
-    
-    writer.close()
-    processed_data = output.getvalue()
 
-    return processed_data
-
-def filter_data_by_ranking(download_data):
-    unique_rankings = download_data['Ranking'].unique().tolist()
-    
-    # Ensure there are unique values to select
-    if unique_rankings:
-        selected_rankings = st.multiselect('Select Clusters to Filter:', unique_rankings)
-        
-        if selected_rankings:
-            # Filter the data based on the selected rankings
-            filtered_data = download_data[download_data['Ranking'].isin(selected_rankings)]
-            
-            # Count the number of records where 'TRG Customer' is 'Yes' and 'No'
-            trg_customer_yes_count = filtered_data[filtered_data['Account : TRG Customer'] == 'Yes'].shape[0]
-            trg_customer_no_count = filtered_data[filtered_data['Account : TRG Customer'] == 'No'].shape[0]
-            
-            # Display the counts
-            st.markdown(f"**Total 'TRG Customer' Count:**")
-            st.markdown(f"- **Yes:** {trg_customer_yes_count}")
-            st.markdown(f"- **No:** {trg_customer_no_count}")
-            
-            st.markdown(f'**Filtered Data by Rankings: {", ".join(selected_rankings)}**')
-            st.dataframe(filtered_data)
-            
-            return filtered_data
-        else:
-            st.warning("Please select at least one ranking value to filter.")
-            return download_data
-    else:
-        st.warning("No unique 'Ranking' values found to filter.")
-        return download_data
 
 # Main preprocessing function
 def preprocess_data(df):
@@ -225,6 +131,12 @@ if deals_file:
         if to_month_index < from_month_index:
             st.sidebar.error("'To Month' must be greater than or equal to 'From Month'. Please select valid options.")
 
+        else:
+            # Convert selected from/to months into actual date objects
+            from_date = pd.to_datetime(f'01-{from_month}', format='%d-%m-%Y')
+            to_date = pd.to_datetime(f'01-{to_month}', format='%d-%m-%Y') + pd.offsets.MonthEnd(1)
+
+                
         # Report options for user selection
         report_options = ['Won', 'Pipeline']
         selected_reports = st.sidebar.multiselect('Select Report Type', options=report_options, default=['Won'])
@@ -257,8 +169,8 @@ if deals_file:
         # Filtering based on sidebar selections, including the new product filter
         deals_data_filtered = deals_data[
             (deals_data['Deal : Deal stage'].isin(selected_stages)) &
-            (deals_data['Deal : Expected close date'] >= pd.to_datetime(from_month, format='%m-%Y')) &
-            (deals_data['Deal : Expected close date'] <= pd.to_datetime(to_month, format='%m-%Y')) 
+            (deals_data['Deal : Expected close date'] >= from_date) &
+            (deals_data['Deal : Expected close date'] <= to_date) 
         ]
         
         # Project category options: Recurring and Non-Recurring
@@ -440,7 +352,7 @@ if deals_file:
         if st.button('Generate Deals Profiling Reports'):
             # Generate the reports
             st.markdown('**Generating Deals Data Profile Report...**')
-            deals_report_file_path = generate_ydata_profiling_report(deals_data, 'Deals Data')
+            deals_report_file_path = data_handling.generate_ydata_profiling_report(deals_data, 'Deals Data')
                 
             st.success('Reports generated successfully!')
 
@@ -448,19 +360,38 @@ if deals_file:
             # Validate if the report files exist before displaying them
             st.markdown('**Deals Data Profile Report**')
             if os.path.exists(deals_report_file_path):
-                set_file_permissions(deals_report_file_path)
-                display_ydata_profiling_report(deals_report_file_path)
+                data_handling.set_file_permissions(deals_report_file_path)
+                data_handling.display_ydata_profiling_report(deals_report_file_path)
             else:
                 st.error('Deals Data Report does not exist. Please generate the report first.')
 
             st.markdown('**Accounts Data Profile Report**')
 
         st.subheader('Data Visualization')
+        metrics = [
+            'Deal : Total Deal Value',
+            'Deal : Total Cost',
+            'Deal : Gross Margin (GM)',
+            'Deal Software Revenue',
+            'Deal Software Cost',
+            'Deal ASM Revenue',
+            'Deal ASM Cost',
+            'Deal Service Revenue',
+            'Deal Service Cost',
+            'Deal Cons Days',
+            'Deal PM Days',
+            'Deal PA Days',
+            'Deal Technical Days',
+            'Deal Hosting Revenue',
+            'Deal Hosting Cost',
+            'Deal Managed Service Revenue',
+            'Deal Managed Service Cost'
+        ]
 
         # Drop-down box to allow the user to select a revenue/cost type
         selected_metric = st.selectbox(
             "Select Revenue or Cost Type to Visualize",
-            options=new_columns
+            options=metrics
         )
 
         # Check if the selected column exists in the DataFrame
@@ -475,7 +406,7 @@ if deals_file:
             trend_data = new_deals_data_filtered.resample('M', on='Date')[selected_metric].sum().reset_index()
 
             # Calculate the mean and sum value for the metric across all months
-            mean_value = new_deals_data_filtered[selected_metric].mean()
+            #mean_value = new_deals_data_filtered[selected_metric].mean()
             sum_value = new_deals_data_filtered[selected_metric].sum()
 
             # Calculate the total number of months between the min and max date
@@ -495,7 +426,7 @@ if deals_file:
             plt.bar(trend_data['Date'].dt.strftime('%Y-%m'), trend_data[selected_metric], label=f'{selected_metric} (Monthly)', color='skyblue')
 
             # Line plot for the mean value across all months
-            plt.axhline(mean_value, color='red', linestyle='--', label=f'Mean {selected_metric}')
+            #plt.axhline(mean_value, color='red', linestyle='--', label=f'Mean {selected_metric}')
 
             # Rotate the x-ticks to show them as 'yyyy-mm' with appropriate jump (1 or 3 months)
             plt.xticks(ticks=trend_data['Date'][::xtick_freq].dt.strftime('%Y-%m'), rotation=45, ha='right')
@@ -513,13 +444,15 @@ if deals_file:
 
             # Format sum and mean with commas and currency (USD)
             formatted_sum_value = f"${sum_value:,.2f}"  # Formats with commas and adds a $ symbol
-            formatted_mean_value = f"${mean_value:,.2f}"
+            #formatted_mean_value = f"${mean_value:,.2f}"
 
             # Display the sum and mean values outside the chart as a label with currency and grouping
-            plt.text(1.01, 0.95, f"Total: {formatted_sum_value}\nMean: {formatted_mean_value}", 
+            # plt.text(1.01, 0.95, f"Total: {formatted_sum_value}\nMean: {formatted_mean_value}", 
+            #         transform=plt.gca().transAxes,
+            #         verticalalignment='top', fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
+            plt.text(1.01, 0.95, f"Total: {formatted_sum_value}", 
                     transform=plt.gca().transAxes,
                     verticalalignment='top', fontsize=12, bbox=dict(facecolor='white', alpha=0.5))
-
 
 
             # Adjust the layout to prevent clipping of tick labels
@@ -533,7 +466,7 @@ if deals_file:
 
 
         # Generate the downloadable Excel files based on the filtered data        
-        output = create_excel(deals_data) # Initializes the Excel sheet
+        output = data_handling.create_excel(deals_data) # Initializes the Excel sheet
         #deal_ouput = create_excel(deals_data_filtered)
         
         # Allow users to download Deals data with assigned clusters

@@ -1,15 +1,11 @@
 from __future__ import division
-from io import BytesIO
 import time
 from matplotlib import pyplot as plt
 import streamlit as st
 import pandas as pd
 import sys
 import os
-import sweetviz as sv
-import streamlit.components.v1 as components
-from ydata_profiling import ProfileReport
-import stat
+
 
 
 # Add the parent directory to the system path
@@ -21,67 +17,6 @@ from fs.graph_drawing import Graph_Drawing
 data_handling = Data_Handling()
 graph_drawing = Graph_Drawing()
 
-# Function to generate ydata_profiling report and save it
-def generate_ydata_profiling_report(df, title):
-    report = ProfileReport(df, title=title)
-    report_file = f"{title} Report.html"  # Specify the file name
-    report.to_file(report_file)            # Save the report as an HTML file
-    return report_file                     # Return the file path
-
-# Display existing profiling report function
-def display_ydata_profiling_report(report_file_path):
-    try:
-        with open(report_file_path, 'r', encoding='utf-8') as f:
-            report_html = f.read()
-        components.html(report_html, height=700, scrolling=True)
-
-    except PermissionError:
-        st.error(f"Permission denied when trying to access {report_file_path}. Please check file permissions.")
-    except FileNotFoundError:
-        st.error(f"The file {report_file_path} does not exist. Please generate the report first.")
-    except OSError as e:
-        st.error(f"OS error occurred: {e}")
-    except UnicodeDecodeError:
-        st.error("Error decoding the profiling report. The file might contain incompatible characters.")
-        
-def set_file_permissions(file_path):
-    try:
-        os.chmod(file_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-        print(f"Permissions set to 644 for file: {file_path}")
-        # Check permissions after setting
-        permissions = oct(os.stat(file_path).st_mode)[-3:]
-        print(f"Current permissions: {permissions}")
-    except FileNotFoundError:
-        print(f"File not found: {file_path}")
-    except PermissionError:
-        print(f"Permission denied: {file_path}")
-    except OSError as e:
-        print(f"OS error occurred: {e}")
-
-# def data_profiling(df, df_name):
-#     st.markdown(f'**{df_name} Data Profiling**')
-#     st.write(f"Data Types for {df_name} data:")
-#     st.write(df.dtypes)
-#     st.write(f"Missing Values in {df_name} data:")
-#     st.write(df.isnull().sum())
-#     st.write(f"Basic Statistics for {df_name} data:")
-#     st.write(df.describe())
-
-# Function to generate and display Sweetviz report
-def generate_sweetviz_report(df, df_name):
-    report = sv.analyze(df)
-    report_name = f"{df_name}_report.html"
-    report.show_html(filepath=report_name, open_browser=False)
-    return report_name
-
-def display_sweetviz_report(report_name):
-    try:
-        with open(report_name, 'r', encoding='utf-8') as f:
-            report_html = f.read()
-        components.html(report_html, height=700, scrolling=True)
-    except UnicodeDecodeError:
-        st.error("Error decoding the Sweetviz report. The file might contain characters that are not compatible with the default encoding.")
-        
 # Main preprocessing function
 def preprocess_data(df):
     
@@ -117,46 +52,7 @@ if 'stage' not in st.session_state:
 def click_button(stage):
     st.session_state.stage = stage
 
-def create_excel(df):
-    output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False)
-    
-    writer.close()
-    processed_data = output.getvalue()
 
-    return processed_data
-
-def filter_data_by_ranking(download_data):
-    unique_rankings = download_data['Ranking'].unique().tolist()
-    
-    # Ensure there are unique values to select
-    if unique_rankings:
-        selected_rankings = st.multiselect('Select Clusters to Filter:', unique_rankings)
-        
-        if selected_rankings:
-            # Filter the data based on the selected rankings
-            filtered_data = download_data[download_data['Ranking'].isin(selected_rankings)]
-            
-            # Count the number of records where 'TRG Customer' is 'Yes' and 'No'
-            trg_customer_yes_count = filtered_data[filtered_data['Account : TRG Customer'] == 'Yes'].shape[0]
-            trg_customer_no_count = filtered_data[filtered_data['Account : TRG Customer'] == 'No'].shape[0]
-            
-            # Display the counts
-            st.markdown(f"**Total 'TRG Customer' Count:**")
-            st.markdown(f"- **Yes:** {trg_customer_yes_count}")
-            st.markdown(f"- **No:** {trg_customer_no_count}")
-            
-            st.markdown(f'**Filtered Data by Rankings: {", ".join(selected_rankings)}**')
-            st.dataframe(filtered_data)
-            
-            return filtered_data
-        else:
-            st.warning("Please select at least one ranking value to filter.")
-            return download_data
-    else:
-        st.warning("No unique 'Ranking' values found to filter.")
-        return download_data
 
 
 
@@ -497,10 +393,10 @@ if deals_file and accounts_file:
             st.markdown('**Data Ready For Download**')
 
             # Call the new function to filter by ranking and display the data
-            filtered_data = filter_data_by_ranking(download_data)
+            filtered_data = data_handling.filter_data_by_ranking(download_data)
             
             # Generate the downloadable Excel files based on the filtered data        
-            output = create_excel(download_data) # Initializes the Excel sheet
+            output = data_handling.create_excel(download_data) # Initializes the Excel sheet
             #deal_ouput = create_excel(deals_data_filtered)
             
             # Allow users to download Deals data with assigned clusters
