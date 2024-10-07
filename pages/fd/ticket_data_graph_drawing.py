@@ -9,6 +9,7 @@ import matplotlib.dates as mdates
 
 from matplotlib.ticker import MaxNLocator
 from matplotlib.patches import Patch
+import streamlit as st
 
 class Ticket_Graph_Drawing():
     def recency_graph(self, id_field, df_attributes):
@@ -457,6 +458,6 @@ class Ticket_Graph_Drawing():
         # Return the figure
         return fig
 
-
+    
 
     
