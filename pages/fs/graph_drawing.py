@@ -126,6 +126,9 @@ class Graph_Drawing():
         date_range = pd.DatetimeIndex(date_range_list)
         def pipeline_value_and_count_at_month(df, month_end):
             """Calculate total deal value and count of deals in the pipeline as of the end of a given month."""
+            # Extend end_date to include the full day
+            end_of_month = pd.to_datetime(month_end) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+            
             
             # Calculate the start of the month based on month_end
             month_start = month_end.replace(day=1)
@@ -135,51 +138,58 @@ class Graph_Drawing():
                 (df['Deal : Created at'] <= month_end) &  # Deal was created on or before the month end
                 ((df['Deal : Closed date'].isna()) | (df['Deal : Closed date'] > month_end))  # Deal is still open or closed after the month end
             ]
-            st.write(f'Start: {month_start} - End: {month_end}')
-            st.write(f'Rows: {pipeline_deals["Deal : id"].count()}')
-            st.dataframe(pipeline_deals[['Deal : Name','Deal : Total Deal Value']])
+            # st.write(f'Start: {month_start} - End: {end_of_month}')
+            # st.write(f'Rows: {pipeline_deals["Deal : id"].count()}')
+            # st.dataframe(pipeline_deals[['Deal : Name','Deal : Total Deal Value','Deal : Owner','Deal : Project type']])
             # Sum the total deal value for the filtered deals
             total_value = pipeline_deals['Deal : Total Deal Value'].sum()
 
             # Count deals created in the current month (between month_start and month_end)
             deals_created = df[
                 (df['Deal : Created at'] >= month_start) &  
-                (df['Deal : Created at'] <= month_end)
+                (df['Deal : Created at'] <= end_of_month)
             ]
-            deal_count = deals_created['Deal : id'].nunique()
+            deal_created_count = deals_created['Deal : id'].nunique()
+            
+            deals_closed = df[
+                (df['Deal : Closed date'] >= month_start) &  
+                (df['Deal : Closed date'] <= end_of_month) &
+                (df['Deal : Deal stage'] == 'Won')
+            ]
+            deal_closed_count = deals_closed['Deal : id'].nunique()
 
-            return total_value, deal_count
+            return total_value, deal_created_count, deal_closed_count
 
         # Initialize lists to store results
         months = []
         total_values = []
-        deal_counts = []
+        deal_created_counts = []
+        deal_closed_counts = []
 
         # Calculate total deal value and deal count for each month in the date range
         for month_end in date_range:
-            total_value, deal_count = pipeline_value_and_count_at_month(df, month_end)
+            total_value, deal_created_count, deal_closed_count = pipeline_value_and_count_at_month(df, month_end)
             months.append(month_end)
             total_values.append(total_value)  # Store total value
-            deal_counts.append(deal_count)  # Store deal count
+            deal_created_counts.append(deal_created_count)  # Store deal count
+            deal_closed_counts.append(deal_closed_count)  # Store deal count
 
         # Create a DataFrame to return
         trend_df = pd.DataFrame({
             'Month': months,
-            'Total Pipeline Value': total_values,
-            'Deal Count': deal_counts
+            'Total Deal Value': total_values,
+            'Deals Created Count': deal_created_counts,
+            'Deals Closed Count': deal_closed_counts
         })
 
         return trend_df
 
 
     def plot_pipeline_trend(self, trend_df, start_month, end_month):
-        """Plots the total deal value and deal count in the pipeline by month within a specified range."""
+        """Plots 'Deals Closed Count' and 'Deals Created Count' on a bar chart, and 'Total Deal Value' on a line chart."""
         
         # Ensure the 'Month' column is in datetime format
         trend_df['Month'] = pd.to_datetime(trend_df['Month'])
-        
-        # Prepare the figure with subplots
-        fig, axs = plt.subplots(2, 1, figsize=(10, 12))
 
         # Filter the DataFrame based on the selected month range
         filtered_trend_df = trend_df[
@@ -187,29 +197,51 @@ class Graph_Drawing():
             (trend_df['Month'] <= pd.to_datetime(end_month))
         ]
 
-        # Plot Total Pipeline Value
-        axs[0].plot(filtered_trend_df['Month'], filtered_trend_df['Total Pipeline Value'], marker='o', linestyle='-', color='b')
-        axs[0].set_title('Total Deal Value in Pipeline by Month')
-        axs[0].set_xlabel('Month')
-        axs[0].set_ylabel('Total Deal Value')
-        axs[0].set_xticks(filtered_trend_df['Month'])
-        axs[0].set_xticklabels(filtered_trend_df['Month'].dt.strftime('%Y-%m'), rotation=45)
-        axs[0].grid(True)
+        # Plot 1: Total Deal Value (line chart)
+        fig1, ax1 = plt.subplots(figsize=(10, 6))
+        
+        ax1.plot(filtered_trend_df['Month'], filtered_trend_df['Total Deal Value'], marker='o', linestyle='-', color='b', label='Total Deal Value')
+        ax1.set_title('Total Deal Value in Pipeline by Month')
+        ax1.set_xlabel('Month')
+        ax1.set_ylabel('Total Deal Value')
+        ax1.set_xticks(filtered_trend_df['Month'])
+        ax1.set_xticklabels(filtered_trend_df['Month'].dt.strftime('%Y-%m'), rotation=45)
+        ax1.grid(True)
+        ax1.legend()
 
-        # Plot Deal Count
-        axs[1].plot(filtered_trend_df['Month'], filtered_trend_df['Deal Count'], marker='o', linestyle='-', color='g')
-        axs[1].set_title('Deal Count in Pipeline by Month')
-        axs[1].set_xlabel('Month')
-        axs[1].set_ylabel('Deal Count')
-        axs[1].set_xticks(filtered_trend_df['Month'])
-        axs[1].set_xticklabels(filtered_trend_df['Month'].dt.strftime('%Y-%m'), rotation=45)
-        axs[1].grid(True)
+        # Display the first figure
+        st.pyplot(fig1)
 
-        # Adjust layout
-        plt.tight_layout()
+        # Plot 2: Deals Closed and Created Count (bar chart)
+        fig2, ax2 = plt.subplots(figsize=(10, 6))
+        
+        bar_width = 10  # Width of the bars, reduced for better separation
+        
+        # Plot Deals Closed Count
+        ax2.bar(filtered_trend_df['Month'] - pd.DateOffset(days=4),  # Offset bars to the left slightly
+                filtered_trend_df['Deals Closed Count'], 
+                width=bar_width, color='r', alpha=0.7, label='Deals Closed Count')
 
-        # Display the plots
-        st.pyplot(fig)
+        # Plot Deals Created Count
+        ax2.bar(filtered_trend_df['Month'] + pd.DateOffset(days=5),  # Offset bars to the right slightly
+                filtered_trend_df['Deals Created Count'], 
+                width=bar_width, color='g', alpha=0.7, label='Deals Created Count')
+
+        ax2.set_title('Deals Closed and Created Count by Month')
+        ax2.set_xlabel('Month')
+        ax2.set_ylabel('Count')
+        ax2.set_xticks(filtered_trend_df['Month'])
+        ax2.set_xticklabels(filtered_trend_df['Month'].dt.strftime('%Y-%m'), rotation=45)
+        ax2.grid(True)
+        
+        # Add a legend for the bar chart
+        ax2.legend()
+
+        # Display the second figure
+        st.pyplot(fig2)
+
+
+
 
 
     
