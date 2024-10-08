@@ -97,6 +97,7 @@ if deals_file:
             # Calculate min and max values from the 'Month' column
             min_date = trend['Month'].min().date()
             max_date = trend['Month'].max().date()
+            st.write(f'Min: {min_date} Max: {max_date}')
         else:
             st.error("No data available to generate trends.")
             min_date = None

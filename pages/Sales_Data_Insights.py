@@ -110,16 +110,16 @@ if deals_file:
         month_year_range = pd.date_range(min_date, max_date, freq='MS').strftime('%m-%Y').tolist()
 
         # Sidebar dropdown for selecting the 'From Month'
-        st.sidebar.write('Select Expected Close Month')
+        st.sidebar.write('Won deals will get closed date, while deals in pipeple will get expected close date')
         from_month = st.sidebar.selectbox(
-            'From:',
+            'From Month:',
             options=month_year_range,
             index=0  # Default to the first month
         )
 
         # Sidebar dropdown for selecting the 'To Month'
         to_month = st.sidebar.selectbox(
-            'To:',
+            'To Month:',
             options=month_year_range,
             index=len(month_year_range) - 1  # Default to the last month
         )
@@ -166,12 +166,25 @@ if deals_file:
             st.sidebar.error("Please select at least one Deal Stage.")
             st.stop()  # Stop execution if no deal stage is selected
 
-        # Filtering based on sidebar selections, including the new product filter
+        # Conditional filtering based on deal stage
         deals_data_filtered = deals_data[
-            (deals_data['Deal : Deal stage'].isin(selected_stages)) &
-            (deals_data['Deal : Expected close date'] >= from_date) &
-            (deals_data['Deal : Expected close date'] <= to_date) 
+            (
+                # Filter by 'Deal : Closed date' if deal stage is 'Won'
+                ((deals_data['Deal : Deal stage'] == 'Won') & 
+                (deals_data['Deal : Closed date'] >= from_date) & 
+                (deals_data['Deal : Closed date'] <= to_date))
+                |
+                # Filter by 'Deal : Expected close date' if deal stage is not 'Won'
+                ((deals_data['Deal : Deal stage'] != 'Won') & 
+                (deals_data['Deal : Deal stage'] != 'Lost') & 
+                (deals_data['Deal : Expected close date'] >= from_date) & 
+                (deals_data['Deal : Expected close date'] <= to_date))
+            )
+            & 
+            # Filter by selected stages
+            (deals_data['Deal : Deal stage'].isin(selected_stages))
         ]
+
         
         # Project category options: Recurring and Non-Recurring
         project_categories = ['Recurring Projects', 'Non-Recurring Projects']
