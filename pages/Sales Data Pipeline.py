@@ -64,16 +64,20 @@ if deals_file:
         # Extract the min and max date range from the 'Deal : Created at' column
         min_date = deals_data['Deal : Created at'].min()
         max_date = deals_data['Deal : Created at'].max()
-        st.write('Max date: ', max_date)
+        
 
         # Add sidebar date input for selecting the "End Date" only
         st.sidebar.write("Deals was created on or before the selected date and deals were still opened or closed after the selected date")
-        end_date = st.sidebar.date_input('End Date:', min_value=min_date, max_value=max_date, value=max_date)
+        end_date = st.sidebar.date_input('As At Date:', min_value=min_date, max_value=max_date, value=max_date)
 
-        # Filtering based on the selected end date
+        # Extend end_date to include the full day
+        end_of_day = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
+        st.write('Up to date: ', end_of_day)
+        # Filtering based on the selected end date (including full end_date)
         filtered_deals_data = deals_data[
-            deals_data['Deal : Created at'] <= pd.to_datetime(end_date)
+            deals_data['Deal : Created at'] <= end_of_day
         ]
+
 
         st.markdown('Filtered data')
         st.write('Total Rows: ', filtered_deals_data['Deal : id'].count())

@@ -124,7 +124,6 @@ class Graph_Drawing():
         
         # Convert the list back to a DatetimeIndex
         date_range = pd.DatetimeIndex(date_range_list)
-
         def pipeline_value_and_count_at_month(df, month_end):
             """Calculate total deal value and count of deals in the pipeline as of the end of a given month."""
             
@@ -134,9 +133,11 @@ class Graph_Drawing():
             # Filter deals that were in the pipeline during the given month
             pipeline_deals = df[
                 (df['Deal : Created at'] <= month_end) &  # Deal was created on or before the month end
-                ((df['Deal : Closed date'].isna()) | (df['Deal : Closed date'] >= month_end))  # Deal is still open or closed after the month end
+                ((df['Deal : Closed date'].isna()) | (df['Deal : Closed date'] > month_end))  # Deal is still open or closed after the month end
             ]
-
+            st.write(f'Start: {month_start} - End: {month_end}')
+            st.write(f'Rows: {pipeline_deals["Deal : id"].count()}')
+            st.dataframe(pipeline_deals[['Deal : Name','Deal : Total Deal Value']])
             # Sum the total deal value for the filtered deals
             total_value = pipeline_deals['Deal : Total Deal Value'].sum()
 
