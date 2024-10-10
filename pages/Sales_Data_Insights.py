@@ -320,6 +320,9 @@ if deals_file:
         
 
         new_columns = [
+            'Deal Total Value',
+            'Deal Total Cost',
+            'Deal Total Gross Margin',
             'Deal Software Revenue',
             'Deal Software Cost',
             'Deal ASM Revenue',
