@@ -309,9 +309,6 @@ if deals_file:
         
 
         new_columns = [
-            # 'Deal Total Value', #sum of column Deal : Total Deal Value 
-            # 'Deal Total Cost', #sum of column  'Deal : Total Cost'
-            # 'Deal Total Gross Margin', #sum of column 'Deal : Gross Margin (GM)'
             'Deal Software Revenue',
             'Deal Software Cost',
             'Deal Retained Software Revenue', # equal value of 'Deal Software Revenue' - value of 'Deal Software Cost'
