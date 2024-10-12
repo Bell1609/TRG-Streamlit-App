@@ -320,15 +320,18 @@ if deals_file:
         
 
         new_columns = [
-            'Deal Total Value',
-            'Deal Total Cost',
-            'Deal Total Gross Margin',
+            # 'Deal Total Value', #sum of column Deal : Total Deal Value 
+            # 'Deal Total Cost', #sum of column  'Deal : Total Cost'
+            # 'Deal Total Gross Margin', #sum of column 'Deal : Gross Margin (GM)'
             'Deal Software Revenue',
             'Deal Software Cost',
+            'Deal Retained Software Revenue', # equal value of 'Deal Software Revenue' - value of 'Deal Software Cost'
             'Deal ASM Revenue',
             'Deal ASM Cost',
+            'Deal Retained ASM Revenue', # equal value of 'Deal ASM Revenue' - value of 'Deal ASM Cost' 
             'Deal Service Revenue',
             'Deal Service Cost',
+            'Deal Retained Service Revenue', # equal value of 'Deal Service Revenue' - value of 'Deal Service Cost'
             'Deal Cons Days',
             'Deal PM Days',
             'Deal PA Days',
@@ -385,15 +388,18 @@ if deals_file:
 
         st.subheader('Data Visualization')
         metrics = [
-            'Deal : Total Deal Value',
-            'Deal : Total Cost',
-            'Deal : Gross Margin (GM)',
+            'Deal : Total Deal Value', #sum of column Deal : Total Deal Value 
+            'Deal : Total Cost', #sum of column  'Deal : Total Cost'
+            'Deal : Total Gross Margin (GM)', #sum of column 'Deal : Gross Margin (GM)'
             'Deal Software Revenue',
             'Deal Software Cost',
+            'Deal Retained Software Revenue', # equal value of 'Deal Software Revenue' - value of 'Deal Software Cost'
             'Deal ASM Revenue',
             'Deal ASM Cost',
+            'Deal Retained ASM Revenue', # equal value of 'Deal ASM Revenue' - value of 'Deal ASM Cost' 
             'Deal Service Revenue',
             'Deal Service Cost',
+            'Deal Retained Service Revenue', # equal value of 'Deal Service Revenue' - value of 'Deal Service Cost'
             'Deal Cons Days',
             'Deal PM Days',
             'Deal PA Days',
@@ -403,7 +409,6 @@ if deals_file:
             'Deal Managed Service Revenue',
             'Deal Managed Service Cost'
         ]
-
         # Drop-down box to allow the user to select a revenue/cost type
         selected_metric = st.selectbox(
             "Select Revenue or Cost Type to Visualize",
