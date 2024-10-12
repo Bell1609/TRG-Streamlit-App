@@ -225,21 +225,23 @@ class Data_Handling():
     
     # Step 2: Define the function to accumulate values for each product
     def get_product_values(self, df, selected_products):
-        # Iterate through each product in the selected_products list
+        # Iterate over each product in the selected_products list
         for product in selected_products:
-            # Loop through all product columns (Deal : Product 1 to Deal : Product 4)
+            # Loop through Deal : Product 1 to Deal : Product 4
             for i in range(1, 5):
                 product_column = f'Deal : Product {i}'
 
                 # Check if the product column exists in the dataframe
                 if product_column not in df.columns:
+                    st.write(f"Product column {product_column} not found")
                     continue
 
-                # Iterate through each row in the dataframe
+                # Iterate over each row in the dataframe
                 for idx, row in df.iterrows():
-                    # Check if the product matches in the current product column
                     if row[product_column] == product:
-                        # List of columns to accumulate values from
+                        #st.write(f"Match found: {product} in column {product_column}, row {idx}")
+
+                        # Define columns to accumulate values from
                         columns_to_check = {
                             'Deal Software Revenue': f'Deal : Software revenue: Product {i}',
                             'Deal Software Cost': f'Deal : Software cost: Product {i}',
@@ -257,12 +259,51 @@ class Data_Handling():
                             'Deal Managed Service Cost': f'Deal : Managed service cost: Product {i}',
                         }
 
-                        # Accumulate the values from the respective columns if they exist
+                        # Accumulate values for Deal Software, ASM, Service, etc.
                         for key, col in columns_to_check.items():
                             if col in df.columns:
-                                df.at[idx, key] += row[col]  # Accumulate value in the corresponding new column
+                                value_to_add = row[col]
 
+                                if pd.notna(value_to_add):  # Only add if value is not NaN
+                                    #st.write(f"Accumulating for {key}, from {col}: row {idx} has value {value_to_add}")
+                                    df.at[idx, key] += value_to_add
+                        
+
+                        # # Accumulate values for the new 'Total' and 'Gross Margin' columns
+                        # total_value_col = f'Deal : Total Deal Value'
+                        # total_cost_col = f'Deal : Total Cost'
+                        # total_gm_col = f'Deal : Gross Margin (GM)'
+
+                        # # Accumulate for Deal Total Value
+                        # if total_value_col in df.columns:
+                        #     total_value = row[total_value_col]
+                        #     if pd.notna(total_value):
+                        #         #st.write(f"Accumulating for Deal Total Value from {total_value_col}: row {idx} has value {total_value}")
+                        #         df.at[idx, 'Deal Total Value'] += total_value
+
+                        # # Accumulate for Deal Total Cost
+                        # if total_cost_col in df.columns:
+                        #     total_cost = row[total_cost_col]
+                        #     if pd.notna(total_cost):
+                        #         #st.write(f"Accumulating for Deal Total Cost from {total_cost_col}: row {idx} has value {total_cost}")
+                        #         df.at[idx, 'Deal Total Cost'] += total_cost
+
+                        # # Accumulate for Deal Total Gross Margin
+                        # if total_gm_col in df.columns:
+                        #     total_gm = row[total_gm_col]
+                        #     if pd.notna(total_gm):
+                        #         #st.write(f"Accumulating for Deal Total Gross Margin from {total_gm_col}: row {idx} has value {total_gm}")
+                        #         df.at[idx, 'Deal Total Gross Margin'] += total_gm
+        
+        # Calculate retained revenues for each row
+        df['Deal Retained Software Revenue'] = df['Deal Software Revenue'] - df['Deal Software Cost']
+        df['Deal Retained ASM Revenue'] = df['Deal ASM Revenue'] - df['Deal ASM Cost']
+        df['Deal Retained Service Revenue'] = df['Deal Service Revenue'] - df['Deal Service Cost']
+                  
         return df
+
+
+
 
 
     def convert_mixed_columns_to_string(self, df):
@@ -343,6 +384,7 @@ class Data_Handling():
     def filter_by_products(self, df, selected_products):
         # Initialize a DataFrame to store filtered rows
         filtered_df = pd.DataFrame()
+        #st.write(f"Selected Product: {selected_products}")
 
         # Loop through each product in selected_products
         for product in selected_products:
@@ -396,17 +438,19 @@ class Data_Handling():
         Returns:
         pd.DataFrame: A DataFrame showing the column name and corresponding sum.
         """
-        
         columns = [
-            'Deal : Total Deal Value',
-            'Deal : Total Cost',
-            'Deal : Gross Margin (GM)',
+            'Deal : Total Deal Value', #sum of column Deal : Total Deal Value 
+            'Deal : Total Cost', #sum of column  'Deal : Total Cost'
+            'Deal : Gross Margin (GM)', #sum of column 'Deal : Gross Margin (GM)'
             'Deal Software Revenue',
             'Deal Software Cost',
+            'Deal Retained Software Revenue', # equal value of 'Deal Software Revenue' - value of 'Deal Software Cost'
             'Deal ASM Revenue',
             'Deal ASM Cost',
+            'Deal Retained ASM Revenue', # equal value of 'Deal ASM Revenue' - value of 'Deal ASM Cost' 
             'Deal Service Revenue',
             'Deal Service Cost',
+            'Deal Retained Service Revenue', # equal value of 'Deal Service Revenue' - value of 'Deal Service Cost'
             'Deal Cons Days',
             'Deal PM Days',
             'Deal PA Days',
