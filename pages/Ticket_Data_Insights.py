@@ -4,7 +4,9 @@ import pandas as pd
 import streamlit as st
 import sys
 import os
+from authentication import make_sidebar # authentication instance
 
+make_sidebar() # authentication instance
 
 # Add the parent directory to the system path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -68,9 +70,7 @@ def create_excel(df):
     writer.close()
     return output.getvalue()
 
-st.set_page_config(page_title='Home Page')
-
-st.header('Helpdesk Ticket Data Insights')
+st.title('Helpdesk Ticket Data Insights')
 
 ticket_data = Ticket_Data()
 ticket_graph_drawing = Ticket_Graph_Drawing()

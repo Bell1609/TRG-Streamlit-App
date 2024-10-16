@@ -5,7 +5,9 @@ import streamlit as st
 import pandas as pd
 import sys
 import os
+from authentication import make_sidebar # authentication instance
 
+make_sidebar() # authentication instance
 
 
 # Add the parent directory to the system path

@@ -10,7 +10,9 @@ import streamlit.components.v1 as components
 from ydata_profiling import ProfileReport
 import stat
 import numpy as np
+from authentication import make_sidebar # authentication instance
 
+make_sidebar() # authentication instance
 
 # Add the parent directory to the system path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))

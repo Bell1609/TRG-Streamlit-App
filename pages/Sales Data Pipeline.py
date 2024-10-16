@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import sys
 import streamlit as st
 import os
+from authentication import make_sidebar # authentication instance
+
+make_sidebar() # authentication instance
 
 # Add the parent directory to the system path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
