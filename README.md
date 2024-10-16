@@ -32,5 +32,5 @@ To run this app locally, you need to have Python installed along with the necess
 
 3. Run the Streamlit app:
     ```bash
-    streamlit run Instructions.py
+    streamlit run landing.py
     ```
