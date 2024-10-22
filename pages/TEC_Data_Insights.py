@@ -6,13 +6,14 @@ import matplotlib.pyplot as plt
 from calendar import monthrange
 import sys
 import os
-from authentication import make_sidebar # authentication instance
 
-make_sidebar() # authentication instance
 
 # Add the parent directory to the system path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from fs.data_handling import Data_Handling
+from authentication import make_sidebar
+
+make_sidebar()
 data_handling = Data_Handling()
 
 # Function to load Excel file and display dataframe

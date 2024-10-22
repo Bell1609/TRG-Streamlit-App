@@ -6,9 +6,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import sys
 import os
-from authentication import make_sidebar # authentication instance
 
-make_sidebar() # authentication instance
 
 
 # Add the parent directory to the system path
@@ -16,6 +14,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from fd.ticket_data_graph_drawing import Ticket_Graph_Drawing
 from fd.ticket_data_handling import Ticket_Data
+from authentication import make_sidebar
 
 
 def preprocess_data(df):
@@ -37,7 +36,10 @@ def preprocess_data(df):
     return df
 
     
-st.title('Ticket Data Segmenting')
+st.set_page_config(page_title='Home Page')
+make_sidebar()
+
+st.header('Ticket Data Segmenting')
 
 ticket_data = Ticket_Data()
 ticket_graph_drawing = Ticket_Graph_Drawing()

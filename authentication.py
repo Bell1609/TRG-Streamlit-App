@@ -14,7 +14,6 @@ def get_current_page_name():
 
 def make_sidebar():
     with st.sidebar:
-        st.title("Functions:")
         st.write("")
 
         if st.session_state.get("authentication_status"):

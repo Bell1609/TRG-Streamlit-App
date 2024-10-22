@@ -7,7 +7,7 @@ from authentication import make_sidebar
 
 # Load user credentials from a YAML file
 def load_credentials():
-    config_file = Path(__file__).parent / "config.yaml"
+    config_file = Path(__file__).parent / "config/config.yaml"
     with open(config_file) as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
     return config
@@ -48,7 +48,7 @@ def main():
         st.warning("Please enter your username and password")
 
     # Logout button
-    if st.session_state.get("logged_in", True):
+    if st.session_state.get("logged_in", False):
         authenticator.logout('Logout')  # Adjust the button name and location as needed
 
 if __name__ == "__main__":

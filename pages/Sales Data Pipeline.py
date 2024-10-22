@@ -1,18 +1,18 @@
+from datetime import datetime, timedelta
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import streamlit as st
 import os
-from authentication import make_sidebar # authentication instance
-
-make_sidebar() # authentication instance
 
 # Add the parent directory to the system path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from fs.data_handling import Data_Handling
 from fs.graph_drawing import Graph_Drawing
+from authentication import make_sidebar
 
+make_sidebar()
 data_handling = Data_Handling()
 graph_drawing = Graph_Drawing()
 
@@ -71,20 +71,20 @@ if deals_file:
 
         # Add sidebar date input for selecting the "End Date" only
         st.sidebar.write("Deals was created on or before the selected date and deals were still opened or closed after the selected date")
-        end_date = st.sidebar.date_input('As At Date:', min_value=min_date, max_value=max_date, value=max_date)
+        end_date = st.sidebar.date_input('Select Date:', min_value=min_date, max_value=max_date, value=max_date)
 
         # Extend end_date to include the full day
         end_of_day = pd.to_datetime(end_date) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
-        st.write('Up to date: ', end_of_day)
+        st.write('Data is calculated up to date: ', end_date)
         # Filtering based on the selected end date (including full end_date)
         filtered_deals_data = deals_data[
             deals_data['Deal : Created at'] <= end_of_day
         ]
 
 
-        st.markdown('Filtered data')
-        st.write('Total Rows: ', filtered_deals_data['Deal : id'].count())
-        st.dataframe(filtered_deals_data)
+        # st.markdown('Filtered data')
+        # st.write('Total Rows: ', filtered_deals_data['Deal : id'].count())
+        # st.dataframe(filtered_deals_data)
 
 
         # Assuming you already have trend data and deal counts
@@ -92,14 +92,14 @@ if deals_file:
 
 
         # Ensure 'Month' is in datetime format
-        trend['Month'] = pd.to_datetime(trend['Month'])
+        trend['As At Date'] = pd.to_datetime(trend['As At Date'])
 
-        
         # Assuming trend_df is already created and available
         if not trend.empty:
             # Calculate min and max values from the 'Month' column
-            min_date = trend['Month'].min().date()
-            max_date = trend['Month'].max().date()
+            min_date = trend['As At Date'].min().date()
+            max_date = trend['As At Date'].max().date()
+
         else:
             st.error("No data available to generate trends.")
             min_date = None
@@ -107,31 +107,36 @@ if deals_file:
 
         # Check if min and max dates are available
         if min_date and max_date:
+            # Get the current month and year
+            current_month = datetime.now().strftime('%Y-%m')
+            
+            # Calculate the date 12 months back from the current month
+            twelve_months_back_date = datetime.now() - timedelta(days=365)
+            twelve_months_back = twelve_months_back_date.strftime('%Y-%m')
+            
+            # Convert min and max dates to 'MM-YYYY' format
+            min_month = min_date.strftime('%Y-%m')
+            max_month = max_date.strftime('%Y-%m')
+            
+            # Generate the list of months in 'MM-YYYY' format
+            month_options = pd.date_range(start=min_date, end=max_date, freq='MS').strftime('%Y-%m').tolist()
+            
             # User selects the month range
-            start_month = st.date_input(
+            start_month = st.selectbox(
                 "Select Start Month", 
-                value=min_date,  # Default to min date from trend_df
-                min_value=min_date, 
-                max_value=max_date
+                options=month_options,
+                index=month_options.index(twelve_months_back) if twelve_months_back in month_options else 0  # Default to 12 months back or min month
             )
             
-            end_month = st.date_input(
+            end_month = st.selectbox(
                 "Select End Month", 
-                value=max_date,  # Default to max date from trend_df
-                min_value=start_month,  # Ensure end month is after start month
-                max_value=max_date
+                options=month_options,
+                index=month_options.index(current_month)  # Default to current month of current year
             )
+            
+        
         else:
             st.warning("Please load trend data to select the month range.")
-
-
-
-        # Filter trend_df for the selected month range
-        filtered_trend_df = trend[
-            (trend['Month'] >= pd.to_datetime(start_month)) & 
-            (trend['Month'] <= pd.to_datetime(end_month))
-        ]
-
-        st.dataframe(filtered_trend_df)
+        
         # Call the plotting function with the filtered trend DataFrame
-        graph_drawing.plot_pipeline_trend(filtered_trend_df, start_month, end_month)
+        graph_drawing.plot_pipeline_trend(trend, start_month, end_month)
