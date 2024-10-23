@@ -41,7 +41,7 @@ class Data_Handling():
         df_rfm.columns = [id_field]
 
         # Get today's date
-        today = pd.to_datetime(datetime.today().date())
+        today = pd.to_datetime(datetime.datetime.today().date())
 
         # Convert 'Deal : Expected close date' to datetime
         df['Deal : Expected close date'] = pd.to_datetime(df['Deal : Expected close date'], dayfirst=True, errors='coerce')
