@@ -8,7 +8,6 @@ import streamlit as st
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-import datetime
 import sweetviz as sv
 import streamlit.components.v1 as components
 from ydata_profiling import ProfileReport
@@ -42,7 +41,7 @@ class Data_Handling():
         df_rfm.columns = [id_field]
 
         # Get today's date
-        today = pd.to_datetime(datetime.datetime.today().date())
+        today = pd.to_datetime(datetime.today().date())
 
         # Convert 'Deal : Expected close date' to datetime
         df['Deal : Expected close date'] = pd.to_datetime(df['Deal : Expected close date'], dayfirst=True, errors='coerce')
