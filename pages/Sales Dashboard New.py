@@ -12,6 +12,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from fs.data_handling import Data_Handling
 from fs.graph_drawing import Graph_Drawing
+from authentication import make_sidebar
 
 data_handling = Data_Handling()
 graph_drawing = Graph_Drawing()
@@ -225,6 +226,8 @@ st.set_page_config(
     page_icon="🏂",
     layout="wide",
     initial_sidebar_state="expanded")
+
+make_sidebar() # Adding authentication logic
 
 alt.themes.enable("dark")
 
