@@ -12,6 +12,7 @@ import datetime
 import sweetviz as sv
 import streamlit.components.v1 as components
 from ydata_profiling import ProfileReport
+from datetime import datetime
 
 def format_number(num):
     if num > 1000000:
@@ -41,7 +42,7 @@ class Data_Handling():
         df_rfm.columns = [id_field]
 
         # Get today's date
-        today = pd.to_datetime(datetime.datetime.today().date())
+        today = pd.to_datetime(datetime.today().date())
 
         # Convert 'Deal : Expected close date' to datetime
         df['Deal : Expected close date'] = pd.to_datetime(df['Deal : Expected close date'], dayfirst=True, errors='coerce')
@@ -539,7 +540,7 @@ class Data_Handling():
         max_year = max(dataframe['Deal : Expected close date'].max().year, dataframe['Deal : Closed date'].max().year)
 
         # Get the current year
-        current_year = datetime.datetime.now().year
+        current_year = datetime.now().year
 
         # Ensure the current year is within the selectable range, otherwise default to max year
         default_year = current_year if min_year <= current_year <= max_year else max_year
@@ -557,16 +558,23 @@ class Data_Handling():
 
 
     
-    # Calculate from and to month based on the selected year and whether it's Won or Open Deals
+    # Calculate from and to month based on the selected year and whether it's Won or Open Deals or Pipeline deals
     def calculate_date_range(self, selected_year, dataframe, deal_type):
         from_month = pd.Timestamp(f"{selected_year}-01-01")
+        
         if deal_type == "Won":
             to_month = dataframe[dataframe['Deal : Closed date'].dt.year == selected_year]['Deal : Closed date'].max()
-        else:
+        elif deal_type == "Pipeline":
+            to_month = dataframe[dataframe['Deal : Created at'].dt.year == selected_year]['Deal : Created at'].max()
+        else: #Open deals
             to_month = dataframe[dataframe['Deal : Expected close date'].dt.year == selected_year]['Deal : Expected close date'].max()
+        
+        # If to_month is still null, default to December 31st of the selected year
         if pd.isnull(to_month):
             to_month = pd.Timestamp(f"{selected_year}-12-31")
+        
         return from_month, to_month
+
     
     # Function to filter deals based on the selected date range
     def filter_deals(self, dataframe, from_month, to_month, date_column):

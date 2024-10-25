@@ -17,9 +17,12 @@ class Graph_Drawing():
     def format_number(self, num):
         if num > 1000000:
             if not num % 1000000:
-                return f'{num // 1000000} M'
-            return f'{round(num / 1000000, 1)} M'
-        return f'{num // 1000} K'
+                return f'{num // 1000000:,} M'
+            return f'{round(num / 1000000, 1):,} M'
+        return f'{num / 1000:,.0f} K'
+        
+    
+
 
     @st.cache_data(show_spinner=False)
     def rfm_component_graph(_self, df_rfm, rfm_component, color):
@@ -724,8 +727,8 @@ class Graph_Drawing():
         fig = px.bar(avg_days_to_close, x='Deal : Owner', y='Days to Close')
         st.plotly_chart(fig)
         
-
-    def plot_deal_value_growth_rate(self, df):       
+    @st.cache_data
+    def plot_deal_value_growth_rate(_self, df):       
         # Extract month from 'Deal : Closed date'
         df['Month'] = pd.to_datetime(df['Deal : Closed date']).dt.to_period('M')
         
@@ -738,6 +741,96 @@ class Graph_Drawing():
         # Plot the results
         fig = px.line(deal_value_growth, x='Month', y='Deal : Total Deal Value')
         st.plotly_chart(fig)
+        
+    #Function to visualize current year pipeline deal value compare to last year
+    @st.cache_data
+    def visualize_pipeline_deal_values_current_last_year(_self, df, view_by='Monthly'):
+        # Convert 'Month' column to datetime if not already in datetime format
+        df['Month'] = pd.to_datetime(df['Month'], format='%Y-%m')
+
+        # Extract current and last year from the data
+        last_year = df['Month'].dt.year.max()
+        current_year = last_year + 1
+
+        # Resample data based on the view_by selection (monthly or quarterly)
+        if view_by == 'Monthly':
+            # Resample by month and aggregate numeric columns
+            data_resampled = df.set_index('Month').resample('M').sum(numeric_only=True).reset_index()
+
+            # Generate a complete range of months from January to the max month in the data
+            min_month = pd.Timestamp(f'{last_year}')
+            max_month = data_resampled['Month'].max()
+
+            # Generate the x-axis labels from January to max month of the current year
+            x_axis = pd.date_range(start=min_month, end=max_month, freq='M')
+
+            # Set the tick format for the x-axis
+            xaxis_tickformat = '%b'
+            xaxis_title = 'Month'
+
+        elif view_by == 'Quarterly':
+            # Resample by quarter and aggregate numeric columns
+            data_resampled = df.set_index('Month').resample('Q').sum(numeric_only=True).reset_index()
+
+            # Generate a complete range of quarters from Q1 to the max quarter in the data
+            min_quarter = pd.Timestamp(f'{current_year}-01-01')
+            max_quarter = data_resampled['Month'].max()
+
+            # Generate the x-axis labels from Q1 to the max quarter of the current year
+            x_axis = pd.date_range(start=min_quarter, end=max_quarter, freq='Q')
+
+            # Set the tick format for the x-axis
+            xaxis_tickformat = 'Q%q'
+            xaxis_title = 'Quarter'
+
+        else:
+            raise ValueError("view_by must be either 'Monthly' or 'Quarterly'")
+
+        # Create the bar chart using Plotly
+        fig = go.Figure()
+
+        # Add bars for 'Total Deal Value' (current year)
+        fig.add_trace(go.Bar(
+            x=x_axis,
+            y=data_resampled['Current Year Total Deal Value'],
+            name=f'{current_year}',
+            marker_color='blue'
+        ))
+
+        # Add bars for 'Last Year Total Deal Value' (last year)
+        fig.add_trace(go.Bar(
+            x=x_axis,
+            y=data_resampled['Total Deal Value'],
+            name=f'{last_year}',
+            marker_color='orange'
+        ))
+
+        # Update layout of the plot
+        fig.update_layout(
+            title={
+                'text': f'Pipeline Deals Accumulated Value Back Date: {current_year} vs {last_year}',  # Add a title
+                'font': {
+                    'size': 20,  # Font size for the title (equivalent to st.markdown("#### Text value"))
+                    'color': 'black'  # Optional: specify the color
+                },
+                'x': 0.7,  # Center the title
+                'xanchor': 'right'  # Center anchor
+            },
+            xaxis_title=xaxis_title,
+            yaxis_title='Total Deal Value',
+            margin=dict(t=30),
+            height=450,
+            barmode='group',  # Group bars next to each other
+            xaxis_tickformat=xaxis_tickformat,  # Format based on view_by
+            template='plotly_white',
+            xaxis_tickmode='array',
+            xaxis_tickvals=x_axis,  # Set x-axis ticks manually
+            xaxis_ticktext=[tick.strftime('%b') if view_by == 'Monthly' else f'Q{tick.quarter}' for tick in x_axis],  # Customize tick labels
+            #legend_title="Year Comparison",
+            #xaxis_tickangle=-45  # Rotate x-axis labels for better readability
+        )
+
+        return fig
 
 
 
