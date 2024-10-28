@@ -220,6 +220,120 @@ def add_last_year_columns(pipeline_deals, pre_pipeline_deals):
     
     return pre_pipeline_deals
 
+def won_deals_tab(dataframe, selected_year):
+    from_month, to_month = data_handling.calculate_date_range(selected_year, dataframe, "Won")
+    won_deals = data_handling.filter_deals(dataframe, from_month, to_month, 'Deal : Closed date')
+
+    # Filter the deals further to include only those with 'Deal : Deal stage' == 'Won'
+    won_deals = won_deals[won_deals['Deal : Deal stage'] == 'Won']
+    with st.container(border= True):
+        #st.subheader(f"Sales Performance Dashboard {selected_year}")
+        st.markdown(f"## Sales Overview {selected_year}")
+
+        # Row 1: Overall metrics within a bordered container
+        row1_cols = st.columns(6, gap='medium')
+        with row1_cols[0]:
+            with st.container(border=True):
+                total_deal_value = graph_drawing.format_number(won_deals['Deal : Total Deal Value'].sum())
+                st.metric('Total Deal Value', total_deal_value)
+        with row1_cols[1]:
+            with st.container(border=True):
+                total_service_revenue = graph_drawing.format_number(won_deals['Deal Service Revenue'].sum())
+                st.metric('Total Service Revenue', total_service_revenue)
+        with row1_cols[2]:
+            with st.container(border=True):
+                total_software_revenue = graph_drawing.format_number(won_deals['Deal Software Revenue'].sum())
+                st.metric('Total Software Revenue', total_software_revenue)
+        with row1_cols[3]:
+            with st.container(border=True):
+                total_asm_revenue = graph_drawing.format_number(won_deals['Deal ASM Revenue'].sum())
+                st.metric('Total ASM Revenue', total_asm_revenue)
+        with row1_cols[4]:
+            with st.container(border=True):
+                total_managed_service_revenue = graph_drawing.format_number(won_deals['Deal Managed Service Revenue'].sum())
+                st.metric('Total AMS Revenue', total_managed_service_revenue)
+        with row1_cols[5]:
+            with st.container(border=True):
+                avg_deal_value = graph_drawing.format_number(won_deals['Deal : Total Deal Value'].mean())
+                st.metric('Average Deal Value', avg_deal_value)
+    
+        st.markdown('<div> </div>', unsafe_allow_html=True)
+        # Row 2: Revenue progress donut charts and sales trend visualization within a bordered container
+        
+        # CSS for centering elements inside row2_cols[0]
+        alignment_css = """
+            <style>
+            .center-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                height: 680px;
+                border: 1px solid #d3d3d3;
+                border-radius: 10px;
+                padding: 15px;
+            }
+            </style>
+        """
+        st.markdown(alignment_css, unsafe_allow_html=True)
+        
+        row2_cols = st.columns((1, 4), gap='medium', vertical_alignment="center")
+        with row2_cols[0]:
+            with st.container(height=680,border=True):
+            
+                # Calculate the revenue data
+                revenue_data = graph_drawing.calculate_revenue_data(won_deals, sales_targets)
+                
+                # Create individual donut charts for progress
+                total_chart = graph_drawing.create_donut_chart(revenue_data['total_progress'], 'Total Revenue Progress', ['#27AE60', '#12783D'])
+                recurring_chart = graph_drawing.create_donut_chart(revenue_data['recurring_progress'], 'Recurring Revenue Progress', ['#29b5e8', '#155F7A'])
+                non_recurring_chart = graph_drawing.create_donut_chart(revenue_data['non_recurring_progress'], 'Non-Recurring Revenue Progress', ['#E74C3C', '#781F16'])
+                st.markdown("##### Actual vs Target")
+                # Display charts aligned properly
+                st.write('Total Deals')
+                st.altair_chart(total_chart)
+                st.write('Recurring Deals')
+                st.altair_chart(recurring_chart)
+                st.write('Non-Recurring Deals')
+                st.altair_chart(non_recurring_chart)
+       
+            
+        with row2_cols[1]:
+            # Sales trend visualization
+            metrics = [
+                'Deal : Total Deal Value', 
+                'Deal : Total Cost',
+                'Deal : Total Gross Margin (GM)',
+                'Deal Software Revenue',
+                'Deal Software Cost',
+                'Deal Retained Software Revenue',
+                'Deal ASM Revenue',
+                'Deal ASM Cost',
+                'Deal Retained ASM Revenue',
+                'Deal Service Revenue',
+                'Deal Service Cost',
+                'Deal Retained Service Revenue',
+                'Deal Cons Days',
+                'Deal PM Days',
+                'Deal PA Days',
+                'Deal Technical Days',
+                'Deal Hosting Revenue',
+                'Deal Hosting Cost',
+                'Deal Managed Service Revenue',
+                'Deal Managed Service Cost'
+            ]
+            with st.container(height=680,border=True):
+                st.markdown("### Sales Trend")
+                fig = graph_drawing.visualize_metric_over_time(won_deals, metrics)
+                st.plotly_chart(fig, use_container_width=True)
+    
+
+        # Sales Leaderboard
+        st.markdown("### Sales Leaderboard")
+        graph_drawing.visualize_actual_vs_target_sales(won_deals, sales_targets)
+
+    
 st.set_page_config(
     page_title="TRG Dashboard",
     page_icon="🏂",
@@ -233,8 +347,8 @@ with open("config/sales_targets.yaml", 'r') as file:
     sales_targets = yaml.safe_load(file)
     
 # Load css style
-with open("config/style.css") as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+# with open("config/style.css") as f:
+#     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 # Mandatory columns
 required_columns = ['Deal : Name', 'Deal : Account name', 'Deal : Closed date','Deal : Expected close date', 'Deal : Total Deal Value', 'Deal : Probability (%)',
@@ -260,7 +374,7 @@ required_columns = ['Deal : Name', 'Deal : Account name', 'Deal : Closed date','
 # File uploaderƒ
 st.sidebar.header("Configuration")
 file_deals = st.sidebar.file_uploader("Upload Deals Data File", type=['csv', 'xlsx'])
-file_acct = st.sidebar.file_uploader("Upload Accounting Data File", type=['csv','xlsx'])
+#file_acct = st.sidebar.file_uploader("Upload Accounting Data File", type=['csv','xlsx'])
 # Add filter View By on the sidebar
 view_by = st.sidebar.selectbox(
     "View Trend By",
@@ -277,11 +391,11 @@ probability = st.sidebar.number_input(
     help="Enter deal probability % to view forecast deals"
 )
 # Load and validate data
-if file_deals and file_acct:
+if file_deals:
     deals_data = load_data(file_deals)
-    acct_data = load_data(file_acct)
+    #acct_data = load_data(file_acct)
     
-    if deals_data is not None and acct_data is not None:
+    if deals_data is not None:
         deals_data = preprocess_data(deals_data)
         # Sidebar Filters
         st.sidebar.header("Filters")
@@ -373,12 +487,16 @@ if file_deals and file_acct:
         #Main dashboard GUI
         
         tab1, tab2 = st.tabs(["Won Deals", "Open Deals"])
-        # Get the current month and year
-        current_month = dt.datetime.now().strftime('%Y-%m')
+        # Get the current month
+        current_month = dt.datetime.now().month
         current_year = dt.datetime.now().year
         
         # Styling for containers using Streamlit's "st.container" and "st.columns"
         with tab1:
+            #st.write(current_month)
+            #sales actual dashboard
+            won_deals_tab(new_deals_data_filtered, selected_year)
+            #sale over view dashboard
             won_deals = filter_won_deals(new_deals_data_filtered, selected_year)
             pre_won_deals = filter_won_deals(new_deals_data_filtered, selected_year - 1)
             open_deals = filter_open_deals(new_deals_data_filtered, selected_year)
@@ -409,10 +527,21 @@ if file_deals and file_acct:
             open_deals_count = open_deals.shape[0]
             conversion_rate = (won_deals_count / new_deals_year_count * 100) if new_deals_year_count > 0 else 0
             
+            
+            # Combine them to form 'yyyy-mm' format
+            current_year_month = f"{selected_year}-{current_month}"
+        
+
             # Add a 'Created Month' column to the dataframe in 'yyyy-mm' format
             new_deals_year['Created Month'] = new_deals_year['Deal : Created at'].dt.strftime('%Y-%m')
-            # Further filter new_deals_year by current month and probability
-            new_deals_month = new_deals_year[new_deals_year['Created Month'] == current_month]
+
+            # Further filter new_deals_year by current year and month
+            new_deals_month = new_deals_year[new_deals_year['Created Month'] == current_year_month]
+            
+            # # Add a 'Created Month' column to the dataframe in 'yyyy-mm' format
+            # new_deals_year['Created Month'] = new_deals_year['Deal : Created at'].dt.strftime('%Y-%m')
+            # # Further filter new_deals_year by current month and probability
+            # new_deals_month = new_deals_year[new_deals_year['Created Month'] == current_month]
 
             # Get the count and total deal value for the filtered deals
             deals_created_month_count = new_deals_month.shape[0]

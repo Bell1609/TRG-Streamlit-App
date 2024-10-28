@@ -21,8 +21,8 @@ To run this app locally, you need to have Python installed along with the necess
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/TRG-International/TRG-Streamlit_App.git
-    cd TRG-Streamlit-App
+    git clone https://github.com/Bell1609/TRG-Streamlit-App-main.git
+    cd TRG-Streamlit-App-main
     ```
 
 2. Install the required packages:
@@ -32,5 +32,5 @@ To run this app locally, you need to have Python installed along with the necess
 
 3. Run the Streamlit app:
     ```bash
-    streamlit run Instructions.py
+    streamlit run landing.py
     ```
