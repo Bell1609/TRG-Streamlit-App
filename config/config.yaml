@@ -22,7 +22,8 @@ credentials:
     qphan:
       email: quan.phan@trginternational.com
       name: qphan
-      password: $2b$12$8bJj2FiR1PUt0BqtTXeEUOZY3ZLwe9WUUWTctQpt53FNWMiHXSSoG
+      password: $2b$12$VY52UEivyxQCIF7TRGCSbOtqmbvm6wv6NbPqxYZDz36H4vUN4H2aa
+      verified: true
     rbriggs:
       email: rbriggs@gmail.com
       failed_login_attempts: 0
