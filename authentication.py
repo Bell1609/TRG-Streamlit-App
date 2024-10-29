@@ -1,12 +1,16 @@
 import os
 import re
 import time
+import random
+import string
+from datetime import datetime, timedelta
 import streamlit as st
 import yaml
 from pathlib import Path
 import streamlit_authenticator as stauth
 from streamlit.runtime.scriptrunner import get_script_run_ctx
 from streamlit.source_util import get_pages
+from email_utils import send_verification_email, send_password_reset_email
 
 def get_current_page_name():
     ctx = get_script_run_ctx()
@@ -42,6 +46,22 @@ def is_valid_username(username):
     # Username must be alphanumeric and between 3-15 characters long
     username_pattern = r"^[a-zA-Z0-9]{3,15}$"
     return re.match(username_pattern, username)
+
+def generate_reset_token(length=6):
+    """Generates a random alphanumeric token for password reset."""
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
+def is_valid_email_domain(email, allowed_domains):
+    """Check if the email's domain is in the list of allowed domains."""
+    domain = email.split("@")[-1]
+    return domain in allowed_domains
+
+# Dictionary to store activation codes temporarily
+activation_codes = {}
+
+def generate_activation_code(length=6):
+    """Generates a random alphanumeric activation code."""
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 def make_sidebar():
     with st.sidebar:
@@ -83,130 +103,153 @@ def logout():
     st.info("Logged out successfully!")
     st.rerun()  # Refresh the app to apply changes
 
-# Register a new user with validation
 # Register a new user with validation and st.form
 def register_user():
     config = load_credentials()
+    allowed_domains = config.get("allowed_domains", [])  # Get allowed domains from config
 
     st.write("Register a new account")
-    
-    # Group inputs into a form
-    with st.form("register_form", clear_on_submit=True):
+
+    with st.form("register_form", clear_on_submit=False):
         new_username = st.text_input("Enter your username")
         new_email = st.text_input("Enter your email")
         new_password = st.text_input("Enter your password", type="password")
         confirm_password = st.text_input("Confirm your password", type="password")
-
-        # Submit button for the form
+        
         submit_button = st.form_submit_button("Submit")
-
+        
         if submit_button:
-            # Flag to control submission
             is_form_valid = True
 
-            # Validate username
-            if new_username:
-                if not is_valid_username(new_username):
-                    st.error("Username must be alphanumeric and between 3-15 characters.")
-                    is_form_valid = False
-            else:
+            # Input validation
+            if new_username and not is_valid_username(new_username):
+                st.error("Username must be alphanumeric and between 3-15 characters.")
                 is_form_valid = False
-                st.error("Username is required")
-
-            # Validate email
-            if new_email:
-                if not is_valid_email(new_email):
-                    st.error("Please enter a valid email address.")
-                    is_form_valid = False
-                else:
-                    authorized_emails = config.get("authorized_emails", [])
-                    allowed_domains = config.get("allowed_domains", [])
-                    email_domain = new_email.split('@')[-1]
-
-                    if new_email not in authorized_emails and email_domain not in allowed_domains:
-                        st.error("This email is not authorized for registration.")
-                        is_form_valid = False
-            else:
+            if new_email and not is_valid_email(new_email):
+                st.error("Please enter a valid email address.")
                 is_form_valid = False
-                st.error("Email is required")
-
-            # Validate password
-            if new_password:
-                if new_password != confirm_password:
-                    st.error("Passwords do not match.")
-                    is_form_valid = False
-            else:
+            elif not is_valid_email_domain(new_email, allowed_domains):  # Check allowed domain
+                st.error(f"Email domain not allowed. Please use an email from these domains: {', '.join(allowed_domains)}")
                 is_form_valid = False
-                st.error("Password is required")
-
-            # Only submit when form is valid
+            if new_password and new_password != confirm_password:
+                st.error("Passwords do not match.")
+                is_form_valid = False
+            
             if is_form_valid:
-                config['credentials']['usernames'][new_username] = {
-                    'name': new_username,  # Store the username as the name
-                    'email': new_email,    # Store email separately
-                    'password': new_password  # Store the hashed password
-                }
+                # Generate activation code and expiration time
+                code = generate_activation_code()
+                expiration_time = (datetime.now() + timedelta(hours=1)).isoformat()
 
-                # Now hash the new credentials using stauth.Hasher
-                stauth.Hasher.hash_passwords(config['credentials'])
+                # Attempt to send the verification email
+                if send_verification_email(new_email, code):
+                    st.success("Registration successful! Please check your email for a verification link.")
 
-                # Save the updated credentials with hashed passwords
-                save_credentials(config)
+                    # Save credentials only if email sent successfully
+                    config['credentials']['usernames'][new_username] = {
+                        'name': new_username,
+                        'email': new_email,
+                        'password': new_password,  # Hashed password should be used here
+                        'verified': False,
+                        'activation_code': code,
+                        'code_expiry': expiration_time
+                    }
+                    stauth.Hasher.hash_passwords(config['credentials'])
+                    save_credentials(config)
 
-                st.success("Registration successful! You can now log in.")
+                    # Redirect to login page
+                    st.session_state['form'] = 'login'
+                    st.rerun()
+                else:
+                    st.error("Failed to send verification email. Please try again.")
 
-                # Redirect to login page
-                time.sleep(1)
+    # Retry button outside the form
+    if st.session_state.get('form') == 'register':
+        st.button("Retry", on_click=lambda: st.session_state.update({'form': 'register'}))
 
-                st.session_state['form'] = 'login'  # Switch to login form
-                st.rerun()  # Force app to rerun and redirect to login
+def verify_user(email, code):
+    config = load_credentials()
+    username = None
+
+    # Locate the username associated with the email
+    for user, details in config['credentials']['usernames'].items():
+        if details.get('email') == email:
+            username = user
+            break
+
+    if username:
+        user_data = config['credentials']['usernames'][username]
+        
+        # Debugging output to verify values
+        st.write("Stored activation code:", user_data.get("activation_code"))
+        st.write("Stored code expiry:", user_data.get("code_expiry"))
+
+        # Verify the activation code and expiration
+        stored_code = user_data.get("activation_code")
+        code_expiry = user_data.get("code_expiry")
+
+        # Check activation code validity
+        if stored_code == code:
+            # Ensure code_expiry is a string
+            if isinstance(code_expiry, str):
+                try:
+                    # Attempt to parse `code_expiry`
+                    expiry_datetime = datetime.fromisoformat(code_expiry)
+                    st.write("Parsed expiry datetime:", expiry_datetime)
+
+                    # Check if code has expired
+                    if expiry_datetime >= datetime.now():
+                        # Mark user as verified
+                        user_data['verified'] = True
+                        # Remove activation code and expiry
+                        user_data.pop('activation_code', None)
+                        user_data.pop('code_expiry', None)
+                        save_credentials(config)
+                        return True
+                    else:
+                        st.error("The activation code has expired.")
+                except ValueError:
+                    st.error("Activation code expiry format is invalid.")
+                    st.write("Value of code_expiry that caused error:", code_expiry)
+            else:
+                st.error("Activation code expiry is missing or not in the correct format.")
+        else:
+            st.error("Invalid activation code.")
+    else:
+        st.error("Activation request not found.")
+    return False
 
 def reset_password():
     config = load_credentials()
 
     st.write("Reset your password")
 
-    with st.form("reset_password_form", clear_on_submit=True):
-        username = st.text_input("Enter your username")
-        email = st.text_input("Enter your email")
+    if "reset_step" not in st.session_state:
+        st.session_state["reset_step"] = 1
 
-        new_password = st.text_input("Enter your new password", type="password")
-        confirm_password = st.text_input("Confirm your new password", type="password")
+    if st.session_state["reset_step"] == 1:
+        with st.form("email_verification_form", clear_on_submit=True):
+            username = st.text_input("Enter your username")
+            email = st.text_input("Enter your email")
+            submit_button = st.form_submit_button("Send Reset Code")
 
-        submit_button = st.form_submit_button("Submit")
-
-        if submit_button:
-            # Check if the username exists in the credentials
-            if username not in config['credentials']['usernames']:
-                st.error("Username not found. Please check and try again.")
-            else:
-                # Validate that the email matches the username
-                stored_email = config['credentials']['usernames'][username].get('email')
-                if stored_email != email:
-                    st.error("The email you entered does not match the one on file for this username.")
-                elif new_password != confirm_password:
-                    st.error("Passwords do not match.")
+            if submit_button:
+                if username not in config['credentials']['usernames']:
+                    st.error("Username not found.")
                 else:
-                    # Create a credentials dictionary for hashing the new password
-                    credentials_to_hash = {
-                        'usernames': {
-                            username: {
-                                'name': config['credentials']['usernames'][username]['name'],
-                                'password': new_password  # Store the plain-text password temporarily
-                            }
-                        }
-                    }
+                    user_data = config['credentials']['usernames'][username]
+                    if not user_data.get('verified', False):
+                        st.error("This account is not verified. Please verify your account before resetting the password.")
+                    elif user_data.get('email') != email:
+                        st.error("The email you entered does not match our records.")
+                    else:
+                        # Generate and store reset token
+                        token = generate_reset_token()
+                        expiration_time = (datetime.now() + timedelta(minutes=10)).isoformat()
+                        user_data["reset_token"] = token
+                        user_data["token_expiry"] = expiration_time
+                        save_credentials(config)  # Update the config with the token
 
-                    # Hash the new password
-                    hashed_credentials = stauth.Hasher.hash_passwords(credentials_to_hash)
-
-                    # Update the user's password in the config
-                    config['credentials']['usernames'][username]['password'] = hashed_credentials['usernames'][username]['password']
-
-                    # Save the updated credentials to the YAML file
-                    save_credentials(config)
-
-                    st.success("Password reset successfully! You can now log in with your new password.")
-                    # Redirect to login after a short pause
-                    st.session_state['form'] = 'login'
-                    st.rerun()
+                        # Send token to email
+                        send_password_reset_email(email, token)
+                        st.success("A reset code has been sent to your email.")
+                        st.session_state["reset_step"] = 2  # Move to the next step

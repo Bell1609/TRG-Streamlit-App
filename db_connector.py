@@ -38,16 +38,34 @@ def run_query(query):
     else:
         print("Failed to create engine.")
         return None
-
     
+'''
 # Define the query (example: listing tables in the database)
 query = """
+SELECT *
+FROM FSAllDealsExtraction
 
+df = run_query(query)
+
+# Check if the query was successful
+if df is not None and not df.empty:
+    # Add "Deal : " prefix to each column name
+    df.columns = ["Deal : " + col for col in df.columns]
+
+    # Proceed with your existing processing, using df as your DataFrame
+    print("Data loaded and columns renamed:")
+    print(df.head())
+    print(df.columns)
+
+else:
+    print("No data available or query failed.")
+
+
+query= """
 SELECT COLUMN_NAME, DATA_TYPE
 FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'FSAllAccountsExtraction'
+WHERE TABLE_NAME = 'FSAllDealsExtraction'
 ORDER BY COLUMN_NAME;
-
 """
 
 # Run the query and get the result as a DataFrame
@@ -58,3 +76,4 @@ if df is not None:
     print(df)
 else:
     print("No data returned or query failed.")
+'''
