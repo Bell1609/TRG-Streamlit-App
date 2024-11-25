@@ -8,7 +8,6 @@ import streamlit as st
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-import datetime
 import sweetviz as sv
 import streamlit.components.v1 as components
 from ydata_profiling import ProfileReport
